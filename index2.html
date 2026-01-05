@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loja de Roupas</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzF 
+ eg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Estilos personalizados */
+        body {
+            padding-top: 56px;
+            /* Ajuste para a navbar fixa */
+        }
+
+        .product-card {
+            margin-bottom: 20px;
+        }
+
+        #cart {
+            position: fixed;
+            top: 56px;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #f8f9fa;
+            border-left: 1px solid #ddd;
+            padding: 20px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+        }
+
+        #cart.show {
+            transform: translateX(0);
+        }
+
+        #cart h2 {
+            margin-bottom: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+
+        .cart-item .item-details {
+            flex-grow: 1;
+        }
+
+        .cart-item .remove-item {
+            cursor: pointer;
+            color: #dc3545;
+        }
+
+        .cart-total {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <a class="navbar-brand" href="#">Loja de Roupas</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Início <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Produtos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Contato</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" id="cart-button"><i class="fas fa-shopping-cart"></i>
+                        Carrinho</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#"><i class="fas fa-user"></i> Área do Usuário</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <div class="container">
+        <!-- Seção de Destaque -->
+        <div class="jumbotron">
+            <h1 class="display-4">Bem-vindo à nossa loja!</h1>
+            <p class="lead">Encontre as melhores roupas com os melhores preços.</p>
+            <a class="btn btn-primary btn-lg" href="#" role="button">Ver Produtos</a>
+        </div>
+
+        <!-- Seção de Produtos -->
+        <div class="row">
+            <div class="col-md-4 product-card">
+                <div class="card">
+                    <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Produto   
+ 1">
+                    <div class="card-body">
+                        <h5 class="card-title">Produto 1</h5>
+                        <p class="card-text">Descrição do produto 1.</p>
+                        <button class="btn btn-primary add-to-cart" data-id="1" data-name="Produto 1" data-price="25.00"
+                            data-image="https://via.placeholder.com/50x50">Adicionar ao Carrinho</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 product-card">
+                <div class="card">
+                    <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Produto   
+ 2">
+                    <div class="card-body">
+                        <h5 class="card-title">Produto 2</h5>
+                        <p class="card-text">Descrição do produto 2.</p>
+                        <button class="btn btn-primary add-to-cart" data-id="2" data-name="Produto 2" data-price="30.00"
+                            data-image="https://via.placeholder.com/50x50">Adicionar ao Carrinho</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 product-card">
+                <div class="card">
+                    <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Produto   
+ 3">
+                    <div class="card-body">
+                        <h5 class="card-title">Produto 3</h5>
+                        <p class="card-text">Descrição do produto 3.</p>
+                        <button class="btn btn-primary add-to-cart" data-id="3" data-name="Produto 3" data-price="40.00"
+                            data-image="https://via.placeholder.com/50x50">Adicionar ao Carrinho</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carrinho -->
+    <div id="cart">
+        <h2>Carrinho</h2>
+        <div id="cart-items">
+            <!-- Itens do carrinho serão adicionados aqui -->
+        </div>
+        <div class="cart-total">
+            Total: R$ <span id="cart-total-price">0.00</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer bg-light text-center py-3">
+        <div class="container">
+            <span class="text-muted">© 2023 Loja de Roupas</span>
+        </div>
+    </footer>
+
+    <!-- Scripts Bootstrap e JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            let cart = [];
+
+            // Função para atualizar a exibição do carrinho
+            function updateCartDisplay() {
+                const cartItemsDiv = $('#cart-items');
+                const cartTotalPriceSpan = $('#cart-total-price');
+                let totalPrice = 0;
+
+                cartItemsDiv.empty(); // Limpa o conteúdo anterior
+
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    totalPrice += itemTotal;
+
+                    const cartItemHTML = `
+                         <div class="cart-item">
+                             <img src="${item.image}" alt="${item.name}">
+                             <div class="item-details">
+                                 <span>${item.name} (${item.quantity} x R$
+ ${item.price.toFixed(2)})</span>
+                             </div>
+                             <div>R$ ${itemTotal.toFixed(2)}</div>
+                             <span class="remove-item" data-id="${item.id}">Remover</span>
+                         </div>
+                     `;
+                    cartItemsDiv.append(cartItemHTML);
+                });
+
+                cartTotalPriceSpan.text(totalPrice.toFixed(2));
+            }
+
+            // Adicionar ao carrinho
+            $('.add-to-cart').click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const price = parseFloat($(this).data('price'));
+                const image = $(this).data('image');
+
+                const existingItem = cart.find(item => item.id === id);
+
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({ id: id, name: name, price: price, image: image, quantity: 1 });
+                }
+
+                updateCartDisplay();
+            });
+
+            // Remover do carrinho
+            $('#cart-items').on('click', '.remove-item', function () {
+                const idToRemove = $(this).data('id');
+                cart = cart.filter(item => item.id !== idToRemove);
+                updateCartDisplay();
+            });
+
+            // Mostrar/Esconder Carrinho
+            $('#cart-button').click(function (e) {
+                e.preventDefault();
+                $('#cart').toggleClass('show');
+            });
+        });
+    </script>
+
+</body>
+
+</html>

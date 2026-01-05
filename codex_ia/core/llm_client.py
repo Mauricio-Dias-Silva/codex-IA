@@ -16,6 +16,30 @@ class GeminiClient:
         
         self.client = genai.Client(api_key=api_key)
         self.model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+        self.chat_session = None
+
+    def start_chat(self, initial_history: list = None):
+        """
+        Starts a new chat session with the model.
+        """
+        self.chat_session = self.client.chats.create(
+            model=self.model,
+            history=initial_history or [],
+            config=types.GenerateContentConfig(
+                temperature=0.4, # Slightly higher for creativity in chat
+            )
+        )
+        return self.chat_session
+
+    def send_message(self, message: str) -> str:
+        """
+        Sends a message to the active chat session.
+        """
+        if not self.chat_session:
+            self.start_chat()
+            
+        response = self.chat_session.send_message(message)
+        return response.text
 
     def analyze_architecture(self, context: str) -> str:
         """

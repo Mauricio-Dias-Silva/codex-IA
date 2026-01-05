@@ -7,7 +7,7 @@ from codex_ia.core.llm_client import GeminiClient
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = typer.Typer()
 console = Console()
@@ -98,6 +98,49 @@ def refactor(
                 console.print(f"[bold red]Erro ao salvar arquivo: {e}[/bold red]")
         else:
             console.print("[yellow]Operação cancelada.[/yellow]")
+
+@app.command()
+def chat(
+    path: str = typer.Option(".", "--path", "-p", help="Caminho do projeto para analisar")
+):
+    """
+    Inicia uma sessão de chat interativo com o Codex-IA sobre o projeto.
+    """
+    from codex_ia.core.agent import CodexAgent
+    from rich.prompt import Prompt
+    from rich.panel import Panel
+
+    console.print(Panel(f"[bold white]Iniciando Codex-IA Agent em: {path}[/bold white]", title="Codex-IA", border_style="blue"))
+    
+    agent = CodexAgent(path)
+    console.print("[dim]Sistema inicializado. Carregando lista de arquivos...[/dim]")
+    
+    # Initial handshake
+    console.print("\n[bold green]Codex-IA:[/bold green] Olá! Estou pronto para conversar sobre seu código. O que você gostaria de saber?")
+    
+    while True:
+        try:
+            user_input = Prompt.ask("\n[bold blue]Você[/bold blue]")
+            
+            if user_input.lower() in ['exit', 'quit', 'sair']:
+                console.print("[yellow]Encerrando sessão. Até logo![/yellow]")
+                break
+                
+            if not user_input.strip():
+                continue
+                
+            # with console.status("[bold blue]Pensando...[/bold blue]"):
+            console.print("[dim]Codex-IA está pensando...[/dim]")
+            response = agent.chat(user_input)
+                
+            console.print(f"\n[bold green]Codex-IA:[/bold green]")
+            console.print(Markdown(response))
+            
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Sessão interrompida.[/yellow]")
+            break
+        except Exception as e:
+            console.print(f"[bold red]Erro inesperado: {e}[/bold red]")
 
 if __name__ == "__main__":
     app()

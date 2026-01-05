@@ -1,0 +1,9 @@
+Lista de Compras:
+
+* Arroz
+* Feijão
+* Carne
+* Verduras
+* Frutas
+* Ovos
+* Leite

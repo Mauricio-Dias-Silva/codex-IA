@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Codex-IA</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
+            --code-bg: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            border-bottom: 1px solid var(--surface);
+            padding-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, var(--primary), #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--text);
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+            padding-left: 1rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #e2e8f0;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #e2e8f0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .badge-new {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .badge-fix {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .note {
+            background-color: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Codex-IA 🧠</h1>
+            <p>Seu Assistente Pessoal de Codificação com Gemini 3 Pro</p>
+        </header>
+
+        <section>
+            <h2>🚀 O que nós criamos?</h2>
+            <p>O <strong>Codex-IA</strong> é uma ferramenta de linha de comando (CLI) que roda no seu terminal. Ele lê
+                os arquivos do seu projeto e usa inteligência artificial para entender, explicar e melhorar seu código.
+            </p>
+
+            <div class="card">
+                <h3>Principais Funcionalidades</h3>
+                <ul>
+                    <li><strong>Contexto Inteligente:</strong> Lê seu projeto ignorando arquivos desnecessários
+                        (respeita o <code>.gitignore</code>).</li>
+                    <li><strong>Explicação:</strong> Traduz código complexo para uma explicação didática.</li>
+                    <li><strong>Refatoração:</strong> Sugere melhorias de código limpo e performance.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>🛠️ Instalação e Configuração</h2>
+
+            <p>1. Instale a ferramenta em modo de edição:</p>
+            <pre><code>pip install -e .</code></pre>
+
+            <p>2. Configure sua chave de API:</p>
+            <p>Crie um arquivo <code>.env</code> na raiz do projeto com o seguinte conteúdo:</p>
+            <pre><code>GEMINI_API_KEY=sua_chave_do_google_aqui</code></pre>
+        </section>
+
+        <section>
+            <h2>💻 Como Usar</h2>
+
+            <div class="card">
+                <h3>1. Explicar um Arquivo <span class="badge badge-new">Novo</span></h3>
+                <p>Para entender o que um arquivo faz:</p>
+                <pre><code>python -m codex_ia.main explain caminho/do/arquivo.py</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>2. Refatorar Código <span class="badge badge-new">Novo</span></h3>
+                <p>Para pedir sugestões de melhoria:</p>
+                <pre><code>python -m codex_ia.main refactor caminho/do/arquivo.py</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>3. Refatoração Interativa <span class="badge badge-new">Top!</span></h3>
+                <p>Para aplicar as melhorias automaticamente no arquivo:</p>
+                <pre><code>python -m codex_ia.main refactor caminho/do/arquivo.py --interactive</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>🧹 Limpeza do Repositório (O que foi feito)</h2>
+            <div class="note">
+                <strong>Situação Anterior:</strong> O repositório estava misturado com o histórico do projeto
+                "crmsolar", pesando mais de 100MB.
+            </div>
+            <p>Realizamos uma operação de limpeza profunda:</p>
+            <ol>
+                <li>Removemos o link remoto incorreto.</li>
+                <li>Apagamos todo o histórico git antigo e pesado.</li>
+                <li>Recriamos o repositório do zero (<code>git init</code>).</li>
+                <li>Enviamos para o GitHub correto (<code>codex-IA</code>).</li>
+            </ol>
+            <p style="margin-top: 1rem;">
+                <span class="badge badge-fix">Resultado</span> O repositório agora está leve (~6KB) e organizado.
+            </p>
+        </section>
+
+        <footer>
+            <p>Gerado automaticamente pelo seu Agente Codex-IA</p>
+        </footer>
+    </div>
+</body>
+
+</html>

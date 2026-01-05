@@ -48,14 +48,46 @@ class ContextManager:
             
         return False
 
-    def get_context(self) -> str:
+    def list_files(self) -> List[str]:
         """
-        Reads all text files in the project, respecting basic ignore rules.
+        Returns a list of all non-ignored files in the repository.
+        """
+        file_list = []
+        for root, dirs, files in os.walk(self.root):
+            # Modify dirs in-place to skip ignored directories
+            dirs[:] = [d for d in dirs if d not in self.ignore_dirs]
+            
+            for file in files:
+                file_path = Path(root) / file
+                if not self._is_ignored(file_path):
+                    try:
+                        rel_path = file_path.relative_to(self.root)
+                        file_list.append(str(rel_path).replace('\\', '/'))
+                    except ValueError:
+                        pass
+        return sorted(file_list)
+
+    def get_context(self, specific_files: List[str] = None) -> str:
+        """
+        Reads existing context, optionally filtering by specific files.
+        If specific_files is None, reads all texts (legacy behavior).
         """
         buffer = []
         
+        # If specific list is provided, only read those
+        if specific_files is not None:
+            for file_path_str in specific_files:
+                file_path = self.root / file_path_str
+                if file_path.exists() and not self._is_ignored(file_path):
+                    try:
+                        content = file_path.read_text(encoding='utf-8', errors='ignore')
+                        buffer.append(f"--- FILE: {file_path_str} ---\n{content}\n")
+                    except Exception:
+                        pass
+            return "\n".join(buffer)
+
+        # Legacy behavior: Read everything
         for root, dirs, files in os.walk(self.root):
-            # Modify dirs in-place to skip ignored directories in os.walk
             dirs[:] = [d for d in dirs if d not in self.ignore_dirs]
             
             for file in files:
@@ -64,15 +96,12 @@ class ContextManager:
                     continue
                 
                 try:
-                    # Check size before reading (skip files > 100KB to save tokens)
                     if file_path.stat().st_size > 100 * 1024:
                         buffer.append(f"--- FILE: {file_path.relative_to(self.root)} (SKIPPED - TOO LARGE) ---\n")
                         continue
 
-                    # Try reading as text
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                         content = f.read()
-                        # Simple binary check: null bytes
                         if '\0' in content: 
                             continue
                             
@@ -82,15 +111,17 @@ class ContextManager:
                     continue
                     
         context_str = "\n".join(buffer)
-        token_estimate = len(context_str) // 4
-        print(f"[Info] Context loaded: ~{token_estimate} tokens")
         return context_str
 
     def get_file_context(self, file_path: str) -> str:
         """
         Reads a specific file with line numbers for better referencing.
         """
-        target_path = Path(file_path).resolve()
+        # Resolve path relative to root if it looks relative
+        target_path = Path(file_path)
+        if not target_path.is_absolute():
+            target_path = (self.root / file_path).resolve()
+            
         if not target_path.exists():
             return f"Error: File {file_path} not found."
         
@@ -104,7 +135,6 @@ class ContextManager:
                 
             content = "".join(numbered_lines)
             
-            # Retrieve relative path for context
             try:
                 rel_path = target_path.relative_to(self.root)
             except ValueError:
