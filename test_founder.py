@@ -8,17 +8,17 @@ founder = FounderAgent()
 
 niche = "Real Estate Agents who struggle with social media"
 
-print(f"🧠 Brainstorming ideas for: '{niche}'...")
+print(f"[BRAINSTORM] Brainstorming ideas for: '{niche}'...")
 ideas = founder.brainstorm_ideas(niche)
 print("\n--- IDEAS GENERATED ---")
 print(ideas[:1000] + "...")
 
 # Pick one idea (simulated selection)
-print("\n🏗️ Generating Landing Page for the best idea...")
+print("\n[GENERATOR] Generating Landing Page for the best idea...")
 landing_page = founder.generate_landing_page("RealtyPost AI: Auto-generate Instagram reels from property listings.")
 
 output_file = "FOUNDER_LANDING_PAGE.html"
 with open(output_file, "w", encoding='utf-8') as f:
     f.write(landing_page)
 
-print(f"\n✅ Landing page saved to {output_file}")
+print(f"\n[OK] Landing page saved to {output_file}")

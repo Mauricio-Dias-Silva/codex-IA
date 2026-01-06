@@ -23,9 +23,9 @@ simulated_metrics = {
     ]
 }
 
-print("📊 Analyzing Simulated Metrics...")
+print("[ANALYSIS] Analyzing Simulated Metrics...")
 roadmap = pm.analyze_metrics(simulated_metrics)
 
-print("\n--- 📝 PRODUCT BACKLOG ---")
+print("\n--- PRODUCT BACKLOG ---")
 print(roadmap)
-print("\n✅ Product Manager Test Complete!")
+print("\n[OK] Product Manager Test Complete!")

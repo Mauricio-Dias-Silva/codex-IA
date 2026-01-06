@@ -1,11 +1,12 @@
-from typing import List, Dict, Any
 from codex_ia.core.context import ContextManager
 from codex_ia.core.llm_client import GeminiClient
+from codex_ia.core.network_agent import NetworkAgent
 
 class CodexAgent:
     def __init__(self, root_path: str = ".", auto_confirm: bool = False):
         self.context_mgr = ContextManager(root_path)
         self.client = GeminiClient()
+        self.network = NetworkAgent()
         self.history = []
         self.auto_confirm = auto_confirm
         
@@ -29,6 +30,10 @@ class CodexAgent:
             # Check for READ_FILE
             match_read = re.search(r"READ_FILE:\s*([^\s\n]+)", response_text)
             
+            # Check for REMEMBER_PATTERN (Level 11)
+            # Format: REMEMBER_PATTERN: name | description | code
+            match_remember = re.search(r"REMEMBER_PATTERN:\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*)", response_text, re.DOTALL)
+            
             # Check for WRITE_FILE using robust tags
             # Format: <<<<FILE: path>>>> content <<<<END_FILE>>>>
             # We use DOTALL to capture newlines in content
@@ -39,6 +44,15 @@ class CodexAgent:
                 file_content = self.context_mgr.get_file_context(file_path)
                 output_msg = f"SYSTEM_OBSERVATION: Content of {file_path}:\n{file_content}"
                 response_text = self.client.send_message(output_msg)
+                turn += 1
+
+            elif match_remember:
+                name = match_remember.group(1).strip()
+                desc = match_remember.group(2).strip()
+                code = match_remember.group(3).strip()
+                
+                msg = self.network.learn_pattern(name, desc, code)
+                response_text = self.client.send_message(f"SYSTEM_SUCCESS: {msg}")
                 turn += 1
                 
             elif match_write:
@@ -102,6 +116,11 @@ class CodexAgent:
         VISÃO GERAL DA ARQUITETURA (CONTEXTO NÍVEL 4):
         {graph_summary}
         
+        MEMÓRIA DE REDE (CONTEXTO NÍVEL 11):
+        Projetos conhecidos: {len(self.network.memory['projects_seen'])}
+        Lições Aprendidas: {len(self.network.memory['lessons'])}
+        Padrões Salvos: {list(self.network.memory['patterns'].keys())}
+        
         ARQUIVOS DO PROJETO:
         {file_list_str}
         
@@ -113,6 +132,8 @@ class CodexAgent:
            <<<<FILE: caminho/do/arquivo.ext>>>>
            conteudo do arquivo aqui...
            <<<<END_FILE>>>>
+        4. MEMORIZAR PADRÃO (NÍVEL 11): Se descobrir algo reutilizável ou uma lição importante:
+           REMEMBER_PATTERN: Nome | Descrição | Codigo
         
         REGRAS:
         - Responda sempre em Markdown.

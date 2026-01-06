@@ -4,6 +4,8 @@ from rich.console import Console
 from rich.markdown import Markdown
 from codex_ia.core.context import ContextManager
 from codex_ia.core.llm_client import GeminiClient
+from codex_ia.core.immunity_agent import ImmunityAgent
+from codex_ia.core.ascension_agent import AscensionAgent
 from dotenv import load_dotenv
 import os
 
@@ -98,6 +100,39 @@ def refactor(
                 console.print(f"[bold red]Erro ao salvar arquivo: {e}[/bold red]")
         else:
             console.print("[yellow]Operação cancelada.[/yellow]")
+
+@app.command()
+def immunity(path: str = "."):
+    """
+    [NÍVEL 12] Inicia o Agente de Imunidade (Watchdog) para reverter alterações quebradas.
+    """
+    console.print(f"[bold red]Iniciando Protocolo de Imunidade em: {path}[/bold red]")
+    console.print("[dim]Pressione Ctrl+C para parar.[/dim]")
+    
+    agent = ImmunityAgent(path)
+    agent.activate_watchdog()
+    
+    try:
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        agent.stop()
+        console.print("[yellow]Imunidade desativada.[/yellow]")
+
+@app.command()
+def ascension():
+    """
+    [NÍVEL 13] Inicia protocolo de Ascensão (Introspecção).
+    """
+    # Verify Safety Locks first? The Agent handles it.
+    console.print("[bold magenta]Iniciando Agente de Ascensão...[/bold magenta]")
+    
+    agent = AscensionAgent(".")
+    structure = agent.introspect()
+    
+    console.print(Panel(structure, title="Codebase DNA", border_style="magenta"))
+    console.print("[bold green]O Agente está ciente de sua própria estrutura.[/bold green]")
 
 @app.command()
 def chat(

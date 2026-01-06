@@ -11,7 +11,7 @@ squad = SquadLeader(root)
 
 mission = "Create a thread-safe Singleton class in Python using a metaclass."
 print(f"MISSION: {mission}\n")
-print("Squad assembling... 🤖🤖🤖")
+print("Squad assembling... [AGENTS]")
 
 try:
     result = squad.assign_mission(mission)
@@ -25,7 +25,7 @@ try:
     print("\n--- 3. TESTS ---")
     print(result['tests'])
     
-    print("\n✅ Squad Mission Complete!")
+    print("\n[OK] Squad Mission Complete!")
 
 except Exception as e:
-    print(f"\n❌ Squad Failed: {e}")
+    print(f"\n[ERROR] Squad Failed: {e}")
