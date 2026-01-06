@@ -1,0 +1,14 @@
+[
+    {
+        "goal": "Decrease User Churn",
+        "metric": "Retention Rate",
+        "target": "+15%",
+        "context": "Users are dropping off during the checkout process because it is too slow."
+    },
+    {
+        "goal": "Reduce Infrastructure Costs",
+        "metric": "Monthly AWS Bill",
+        "target": "-20%",
+        "context": "We are storing too many duplicate images."
+    }
+]

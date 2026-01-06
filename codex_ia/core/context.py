@@ -67,10 +67,78 @@ class ContextManager:
                         pass
         return sorted(file_list)
 
+
+    def build_graph(self) -> str:
+        """
+        [LEVEL 4] Scans all Python files to understand imports and classes.
+        Returns a high-level description of the project architecture.
+        """
+        import ast
+        from codex_ia.core.knowledge_base import KnowledgeBase
+        
+        kb = KnowledgeBase(str(self.root / ".codex_memory.json"))
+        graph_desc = ["PROJECT ARCHITECTURE GRAPH:"]
+        
+        all_files = self.list_files()
+        graph_desc.append(f"Total files: {len(all_files)}")
+        
+        modules = {} # filename -> {imports: [], classes: [], functions: []}
+        
+        for rel_path in all_files:
+            if not rel_path.endswith('.py'):
+                continue
+                
+            file_path = self.root / rel_path
+            try:
+                content = file_path.read_text(encoding='utf-8', errors='ignore')
+                tree = ast.parse(content)
+                
+                info = {"imports": [], "classes": [], "functions": []}
+                
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Import):
+                        for n in node.names:
+                            info["imports"].append(n.name)
+                    elif isinstance(node, ast.ImportFrom):
+                        if node.module:
+                            info["imports"].append(node.module)
+                    elif isinstance(node, ast.ClassDef):
+                        info["classes"].append(node.name)
+                    elif isinstance(node, ast.FunctionDef):
+                        if not node.name.startswith('_'): # Skip private
+                            info["functions"].append(node.name)
+                            
+                modules[rel_path] = info
+                
+                # Store lightweight summary in KB
+                summary = f"Module {rel_path} defines classes {info['classes']} and functions {info['functions']}"
+                kb.update_file_summary(rel_path, summary, "HASH_TODO")
+                
+            except Exception:
+                pass
+        
+        # Save KB
+        kb.save()
+        
+        # Build Text Description
+        for f, data in modules.items():
+            if data['classes'] or data['functions']:
+                graph_desc.append(f"\nFILE: {f}")
+                if data['classes']:
+                    graph_desc.append(f"  Classes: {', '.join(data['classes'])}")
+                if data['functions']:
+                    graph_desc.append(f"  Functions: {', '.join(data['functions'][:5])}...")
+                if data['imports']:
+                    # Only show internal imports (simplified heuristic)
+                    internal = [i for i in data['imports'] if i.startswith('dashboard') or i.startswith('codex_ia')]
+                    if internal:
+                        graph_desc.append(f"  Internal Imports: {', '.join(internal)}")
+
+        return "\n".join(graph_desc)
+
     def get_context(self, specific_files: List[str] = None) -> str:
         """
-        Reads existing context, optionally filtering by specific files.
-        If specific_files is None, reads all texts (legacy behavior).
+        Enhanced get_context that includes the Graph summary if no specific files requested.
         """
         buffer = []
         
@@ -86,7 +154,12 @@ class ContextManager:
                         pass
             return "\n".join(buffer)
 
-        # Legacy behavior: Read everything
+        # Legacy behavior + Graph
+        graph = self.build_graph()
+        buffer.append(graph)
+        buffer.append("\n\n--- DETAILED SOURCE CODE BELOW ---\n")
+        
+        # Read files (limited size)
         for root, dirs, files in os.walk(self.root):
             dirs[:] = [d for d in dirs if d not in self.ignore_dirs]
             
@@ -96,8 +169,12 @@ class ContextManager:
                     continue
                 
                 try:
-                    if file_path.stat().st_size > 100 * 1024:
+                    if file_path.stat().st_size > 50 * 1024: # Smaller limit for auto-context
                         buffer.append(f"--- FILE: {file_path.relative_to(self.root)} (SKIPPED - TOO LARGE) ---\n")
+                        continue
+
+                    # Only read relevant source files for auto-context
+                    if file_path.suffix not in ['.py', '.js', '.html', '.css', '.md']:
                         continue
 
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -110,8 +187,7 @@ class ContextManager:
                 except Exception:
                     continue
                     
-        context_str = "\n".join(buffer)
-        return context_str
+        return "\n".join(buffer)
 
     def get_file_context(self, file_path: str) -> str:
         """

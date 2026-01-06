@@ -5,6 +5,10 @@ from google.genai import types
 
 class GeminiClient:
     def __init__(self):
+        # Ensure env vars are loaded even if called from outside
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
+
         # Support both names, prioritize GEMINI_API_KEY
         api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
         

@@ -2,7 +2,7 @@ import os
 from google import genai
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 key = os.getenv("GEMINI_API_KEY") or os.getenv("GENAI_API_KEY")
 print(f"Key loaded: '{key}'")

@@ -1,0 +1,93 @@
+{
+  "project_summary": "",
+  "file_index": {
+    "check_key.py": {
+      "summary": "Module check_key.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.089683"
+    },
+    "codex_ia/__init__.py": {
+      "summary": "Module codex_ia/__init__.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.090601"
+    },
+    "codex_ia/core/agent.py": {
+      "summary": "Module codex_ia/core/agent.py defines classes ['CodexAgent'] and functions ['chat', 'add_file_to_context']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.098881"
+    },
+    "codex_ia/core/context.py": {
+      "summary": "Module codex_ia/core/context.py defines classes ['ContextManager'] and functions ['list_files', 'build_graph', 'get_context', 'get_file_context']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.108541"
+    },
+    "codex_ia/core/evolution_agent.py": {
+      "summary": "Module codex_ia/core/evolution_agent.py defines classes ['EvolutionAgent'] and functions ['scan_for_improvements', 'auto_refactor', 'run_nightly_optimization']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.113731"
+    },
+    "codex_ia/core/knowledge_base.py": {
+      "summary": "Module codex_ia/core/knowledge_base.py defines classes ['KnowledgeBase'] and functions ['save', 'update_file_summary', 'get_file_summary', 'set_project_summary', 'get_project_summary', 'update_scan_time']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.117129"
+    },
+    "codex_ia/core/llm_client.py": {
+      "summary": "Module codex_ia/core/llm_client.py defines classes ['GeminiClient'] and functions ['start_chat', 'send_message', 'analyze_architecture', 'explain_code', 'refactor_code']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.119194"
+    },
+    "codex_ia/core/visionary_agent.py": {
+      "summary": "Module codex_ia/core/visionary_agent.py defines classes ['VisionaryAgent'] and functions ['load_business_goals', 'align_code_with_goals']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.122706"
+    },
+    "codex_ia/main.py": {
+      "summary": "Module codex_ia/main.py defines classes [] and functions ['audit', 'explain', 'refactor', 'chat']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.127547"
+    },
+    "setup.py": {
+      "summary": "Module setup.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.129056"
+    },
+    "test_debt.py": {
+      "summary": "Module test_debt.py defines classes [] and functions ['complex_function']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.132076"
+    },
+    "test_evolution.py": {
+      "summary": "Module test_evolution.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.134073"
+    },
+    "test_graph.py": {
+      "summary": "Module test_graph.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.135073"
+    },
+    "test_visionary.py": {
+      "summary": "Module test_visionary.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.136689"
+    },
+    "web_app.py": {
+      "summary": "Module web_app.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.140131"
+    },
+    "codex_ia/core/architect_agent.py": {
+      "summary": "Module codex_ia/core/architect_agent.py defines classes ['ArchitectAgent'] and functions ['generate_design_doc']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.100346"
+    },
+    "test_architect.py": {
+      "summary": "Module test_architect.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-06T07:36:59.131093"
+    }
+  },
+  "dependencies": {},
+  "tech_stack": [],
+  "last_scan": null
+}

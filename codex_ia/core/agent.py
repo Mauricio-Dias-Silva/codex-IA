@@ -86,6 +86,12 @@ class CodexAgent:
         """
         Sets up the chat session with the initial system context.
         """
+        # [LEVEL 4] Build Dependency Graph
+        try:
+            graph_summary = self.context_mgr.build_graph()
+        except:
+            graph_summary = "Graph build failed."
+
         files = self.context_mgr.list_files()
         file_list_str = "\n".join(files)
         
@@ -93,7 +99,10 @@ class CodexAgent:
         Você é o Codex-IA, um assistente de codificação inteligente e interativo.
         Você está rodando dentro de um diretório de projeto.
         
-        ESTRUTURA DO PROJETO ATUAL:
+        VISÃO GERAL DA ARQUITETURA (CONTEXTO NÍVEL 4):
+        {graph_summary}
+        
+        ARQUIVOS DO PROJETO:
         {file_list_str}
         
         SUAS CAPACIDADES:
@@ -114,7 +123,7 @@ class CodexAgent:
         
         self.client.start_chat(initial_history=[
             {"role": "user", "parts": [{"text": system_instruction}]},
-            {"role": "model", "parts": [{"text": "Entendido. Aguardo suas instruções."}]}
+            {"role": "model", "parts": [{"text": "Entendido. Tenho o contexto completo da arquitetura. Aguardo instruções."}]}
         ])
 
     def add_file_to_context(self, file_path: str):

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -170,7 +171,7 @@
         </section>
 
         <section>
-            <h2>💻 Como Usar</h2>
+            <h2>💻 Como Usar (CLI)</h2>
 
             <div class="card">
                 <h3>1. Explicar um Arquivo <span class="badge badge-new">Novo</span></h3>
@@ -179,16 +180,32 @@
             </div>
 
             <div class="card">
-                <h3>2. Refatorar Código <span class="badge badge-new">Novo</span></h3>
-                <p>Para pedir sugestões de melhoria:</p>
-                <pre><code>python -m codex_ia.main refactor caminho/do/arquivo.py</code></pre>
+                <h3>2. Chat Gráfico (Web) <span class="badge badge-new">Top!</span></h3>
+                <p>Para abrir a interface visual do Codex:</p>
+                <pre><code>streamlit run web_app.py</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>🛡️ Active Auto-Healer (Novo)</h2>
+            <div class="note">
+                <strong>O que é:</strong> O sistema de auto-cura agora é ATIVO. Se você faz um deploy no PythonJet e ele
+                falha, o Codex entra em ação.
             </div>
 
-            <div class="card">
-                <h3>3. Refatoração Interativa <span class="badge badge-new">Top!</span></h3>
-                <p>Para aplicar as melhorias automaticamente no arquivo:</p>
-                <pre><code>python -m codex_ia.main refactor caminho/do/arquivo.py --interactive</code></pre>
-            </div>
+            <h3>Como funciona o Loop de Cura:</h3>
+            <ol>
+                <li><strong>Detecção:</strong> O deploy falhou no Cloud Build.</li>
+                <li><strong>Diagnóstico:</strong> O DoctorService baixa os logs e manda para a IA.</li>
+                <li><strong>Prescrição:</strong> A IA diz: "Falta a lib 'pandas'".</li>
+                <li><strong>Cirurgia:</strong> O PythonJet edita seu <code>requirements.txt</code> automaticamente.</li>
+                <li><strong>Alta:</strong> O sistema faz o commit e tenta o deploy de novo (até 3x).</li>
+            </ol>
+
+            <p style="margin-top: 1rem;">
+                <span class="badge badge-fix">Benefício</span> Você não precisa mais ficar catando erro de log. O
+                sistema se conserta.
+            </p>
         </section>
 
         <section>
