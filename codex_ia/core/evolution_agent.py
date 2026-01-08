@@ -4,16 +4,19 @@ from pathlib import Path
 from codex_ia.core.context import ContextManager
 from codex_ia.core.llm_client import GeminiClient
 
+from codex_ia.core.squad import SquadLeader
+
 class EvolutionAgent:
     """
     [LEVEL 5] Autonomous Software Engineer.
-    Role: Proactively scans the codebase for improvements without user prompting.
+    Role: Proactively scans the codebase for improvements and dispatches Squads to fix them.
     """
     
     def __init__(self, root_path: str = "."):
         self.context_mgr = ContextManager(root_path)
         self.client = GeminiClient()
         self.root = Path(root_path).resolve()
+        self.root_path = root_path
 
     def scan_for_improvements(self) -> List[Dict[str, Any]]:
         """
@@ -35,7 +38,6 @@ class EvolutionAgent:
                 })
                 
             # 2. Check for complexity (Simple heuristic: file size > 300 lines)
-            # A real implementation would use cyclomatic complexity tools.
             try:
                 if file_path.suffix == '.py':
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -57,44 +59,47 @@ class EvolutionAgent:
         except:
             return False
 
-    def auto_refactor(self, file_path_str: str) -> str:
+    def start_night_shift(self, max_missions: int = 3, verification_cmd: str = "") -> Generator[str, None, None]:
         """
-        Autonomously refactors a specific file.
+        [THE NIGHT SHIFT]
+        Continuously scans and fixes issues.
+        Yields log messages for the UI.
         """
-        context = self.context_mgr.get_file_context(file_path_str)
+        yield "🌙 Night Shift started. Scanning codebase..."
         
-        instructions = """
-        [AUTONOMOUS MODE]
-        Analyze this file. Identify:
-        1. Unused imports.
-        2. Inefficient patterns.
-        3. Missing type hints.
-        
-        Rewrite the code applying these fixes. Ensure functionality remains IDENTICAL.
-        """
-        
-        refactored_code = self.client.refactor_code(context, instructions)
-        return refactored_code
-
-    def run_nightly_optimization(self) -> str:
-        """
-        Entry point for the 'Nightly' job.
-        """
         opps = self.scan_for_improvements()
         if not opps:
-            return "EvolutionAgent: No obvious improvements found. The codebase is healthy."
-            
-        # Pick the 'easiest' fix (Tech Debt) to demonstrate autonomy
-        target = opps[0]
-        report = f"EvolutionAgent Report:\nFound {len(opps)} opportunities.\n"
-        report += f"Targeting: {target['file']} ({target['type']})\n"
+            yield "✅ No issues found. The codebase is clean. Going to sleep."
+            return
+
+        yield f"🧐 Found {len(opps)} opportunities for improvement."
         
-        try:
-            # In a real autonomy loop, we would create a branch, apply, test, and PR.
-            # Here, we generate the diff and log it (Safety first!)
-            new_code = self.auto_refactor(target['file'])
-            report += f"\n--- PROPOSED REFACTOR FOR {target['file']} ---\n{new_code[:500]}...\n(Truncated)"
-        except Exception as e:
-            report += f"\nError attempting refactor: {e}"
+        missions_run = 0
+        squad = SquadLeader(self.root_path)
+        
+        for opp in opps:
+            if missions_run >= max_missions:
+                yield "🛑 Max missions reached for this shift."
+                break
+                
+            target_file = opp['file']
+            issue_type = opp['type']
+            yield f"🎯 Targeting: {target_file} ({issue_type})"
             
-        return report
+            mission = f"Fix the {issue_type} in {target_file}. {opp['description']}"
+            yield f"🚀 Dispatching Squad: '{mission}'"
+            
+            # Dispatch Squad in Autopilot
+            report = squad.assign_mission(
+                mission, 
+                apply=True, 
+                autopilot=True if verification_cmd else False, 
+                verification_cmd=verification_cmd
+            )
+            
+            yield f"📋 Squad Result: {report.get('autopilot_status', 'Done')}"
+            yield f"✅ Fix applied to {target_file}"
+            
+            missions_run += 1
+            
+        yield "☀️ Night Shift shift ended."

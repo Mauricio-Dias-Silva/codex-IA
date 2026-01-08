@@ -22,28 +22,66 @@ class GeminiClient:
         self.model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
         self.chat_session = None
 
-    def start_chat(self, initial_history: list = None):
+    def start_chat(self, initial_history: list = None, web_search: bool = False):
         """
         Starts a new chat session with the model.
         """
+        config_args = {
+            "temperature": 0.4,
+        }
+        
+        if web_search:
+            # Enable Google Search Grounding
+            # Using the google-genai SDK format
+            config_args["tools"] = [types.Tool(google_search=types.GoogleSearch())]
+
         self.chat_session = self.client.chats.create(
             model=self.model,
             history=initial_history or [],
-            config=types.GenerateContentConfig(
-                temperature=0.4, # Slightly higher for creativity in chat
-            )
+            config=types.GenerateContentConfig(**config_args)
         )
         return self.chat_session
 
-    def send_message(self, message: str) -> str:
+    def send_message(self, message: str, web_search: bool = False, image_path: str = None) -> str:
         """
-        Sends a message to the active chat session.
+        Sends a message to the active chat session, optionally with an image.
         """
         if not self.chat_session:
-            self.start_chat()
+            self.start_chat(web_search=web_search)
             
-        response = self.chat_session.send_message(message)
-        return response.text
+        # If there is an image, we need to handle it.
+        # Note: 'chats.send_message' usually takes a string or a list of contents (string + parts).
+        
+        contents = [message]
+        
+        if image_path:
+            import mimetypes
+            
+            if not os.path.exists(image_path):
+                return f"Error: Image not found at {image_path}"
+                
+            mime_type, _ = mimetypes.guess_type(image_path)
+            if not mime_type:
+                mime_type = "image/jpeg" # Default fallback
+                
+            try:
+                with open(image_path, "rb") as f:
+                    image_bytes = f.read()
+                    
+                image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+                # Add image part BEFORE the text prompt usually works best or alongside it
+                contents.append(image_part)
+                
+            except Exception as e:
+                return f"Error loading image: {e}"
+
+        try:
+            # If contents has only 1 item and it's a string, passing it directly is fine.
+            # If it has parts, we pass the list.
+            response = self.chat_session.send_message(contents)
+            return response.text
+        except Exception as e:
+            return f"Error sending message to Gemini: {e}"
 
     def analyze_architecture(self, context: str) -> str:
         """
