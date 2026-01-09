@@ -1,7 +1,8 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import logging
 from codex_ia.core.context import ContextManager
 from codex_ia.core.llm_client import GeminiClient
+from codex_ia.core.network_agent import NetworkAgent
 
 class BaseAgent:
     def __init__(self, role: str, system_prompt: str):
@@ -40,9 +41,6 @@ class EngineerAgent(BaseAgent):
         """
         import os
         full_path = os.path.join(root_path, file_path)
-        
-        # Security check: Ensure we are not breaking out of the allowed paths
-        # (For now, we trust the agent if run locally, but good to keep in mind)
         
         try:
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
@@ -96,7 +94,7 @@ class SquadLeader:
     """
     [LEVEL 8] The Squad Leader.
     Orchestrates specialized agents to complete a feature request.
-    Now capable of actually applying changes.
+    [LEVEL 13 UPGRADE] Integrated with NetworkAgent for Feedback Loops.
     """
     def __init__(self, root_path: str = "."):
         self.root_path = root_path
@@ -107,6 +105,9 @@ class SquadLeader:
         self.executor = ExecutorAgent()
         self.researcher = ResearcherAgent()
         self.client = GeminiClient()
+        
+        # Connect to Exocortex
+        self.network = NetworkAgent()
     
     def set_target(self, new_path: str):
         """Changes the active target directory for the squad."""
@@ -118,20 +119,31 @@ class SquadLeader:
         Executes a mission by coordinating Coder, Tester, and Engineer.
         Supports Autopilot (Write -> Verify -> Fix user loop).
         Supports Web Search (Researcher -> Coder).
+        Supports Recursive Memory (NetworkAgent).
         """
         report = {}
         report['mission'] = mission
         report['target_dir'] = self.root_path
         
+        # 0. Retrieval Phase (Exocortex)
+        # We derive some tags from the mission string (naive approach)
+        tags = [w for w in mission.split() if len(w) > 4]
+        wisdom = self.network.retrieve_wisdom(tags)
+        report['wisdom'] = wisdom
+        
         research_context = ""
         if web_search:
-            # 0. Research Phase
+            # 0.5 Research Phase
             research_query = f"Research necessary info for: {mission}"
             research_context = self.researcher.research(research_query)
             report['research'] = research_context
         
         # 1. Plan
         plan_prompt = f"MISSION: {mission}\n"
+        
+        if wisdom:
+            plan_prompt += f"\nMEMORY INJECTION (PREVIOUS LESSONS):\n{wisdom}\n"
+            
         if research_context:
             plan_prompt += f"RESEARCH CONTEXT:\n{research_context}\n"
             
@@ -142,6 +154,7 @@ class SquadLeader:
         max_retries = 3 if autopilot else 1
         current_attempt = 0
         current_feedback = ""
+        final_success = False
         
         while current_attempt < max_retries:
             current_attempt += 1
@@ -171,7 +184,7 @@ class SquadLeader:
                 report['apply_status'] = result
             else:
                 report['apply_status'] = "Dry Run"
-                # If dry run, we can't really verify via command, so break
+                # If dry run, wait for manual verify or just break
                 break
 
             # 5. Autopilot Verification
@@ -181,12 +194,25 @@ class SquadLeader:
                 
                 if exec_result['success']:
                     report['autopilot_status'] = "✅ Verification Passed"
-                    return report # Success!
+                    final_success = True
+                    break # Success!
                 else:
                     report['autopilot_status'] = f"❌ Attempt {current_attempt} Failed"
                     current_feedback = f"Command '{verification_cmd}' failed.\nSTDERR:\n{exec_result['stderr']}\nSTDOUT:\n{exec_result['stdout']}"
                     # Loop continues...
             else:
-                break # No autopilot, just one pass
-
+                # No verification command means we assume one-shot success for now
+                final_success = True
+                break
+        
+        # 6. Store Experience (Feedback Loop)
+        if autopilot:
+            self.network.store_experience(
+                context=mission,
+                action=plan,
+                outcome=report.get('autopilot_status', 'Unknown'),
+                success=final_success,
+                tags=tags
+            )
+            
         return report

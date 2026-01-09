@@ -1,494 +1,360 @@
-import flet as ft
-import os
-import sys
-import threading
-import time
-from dotenv import load_dotenv
+import traceback
 
-sys.path.append(os.getcwd())
+# Global Exception Logging for Debugging
+def log_startup_error(msg):
+    with open("startup_error.txt", "a") as f:
+        f.write(msg + "\n")
 
-def main(page: ft.Page):
-    # --- APP CONFIGURATION ---
-    page.title = "Codex-IA Turbo"
-    page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 0
-    page.bgcolor = "#111214"
+try:
+    import flet as ft
+    import os
+    import sys
+    import threading
+    import time
+    from dotenv import load_dotenv
     
-    # --- STATE ---
-    agent = None
-    selected_image_path = None # For Vision
-
-    # --- UI COMPONENTS ---
-
-    # 1. Navigation Rail
-    def nav_change(e):
-        index = e.control.selected_index
-        chat_view.visible = (index == 0)
-        files_view.visible = (index == 1)
-        mission_view.visible = (index == 2)
-        night_view.visible = (index == 3)
-        founder_view.visible = (index == 4)
-        
-        if index == 1:
-            refresh_file_list()
-            
-        page.update()
-
-    rail = ft.NavigationRail(
-        selected_index=0,
-        label_type=ft.NavigationRailLabelType.ALL,
-        min_width=100,
-        min_extended_width=400,
-        group_alignment=-0.9,
-        destinations=[
-            ft.NavigationRailDestination(
-                icon="chat_bubble_outline", 
-                selected_icon="chat_bubble", 
-                label="Chat"
-            ),
-            ft.NavigationRailDestination(
-                icon="folder_open", 
-                selected_icon="folder", 
-                label="Files"
-            ),
-            ft.NavigationRailDestination(
-                icon="rocket_launch_outlined", 
-                selected_icon="rocket_launch", 
-                label="Missions"
-            ),
-             ft.NavigationRailDestination(
-                icon="bedtime_outlined", 
-                selected_icon="bedtime", 
-                label="Night Shift"
-            ),
-             ft.NavigationRailDestination(
-                icon="monetization_on_outlined", 
-                selected_icon="monetization_on", 
-                label="Founder"
-            ),
-        ],
-        on_change=nav_change,
-        bgcolor="#1e1f22",
-    )
-
-    # 2. Chat View
-    chat_history = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+    # Ensure we can import codex_ia
+    sys.path.append(os.getcwd())
     
-    def add_msg(text, is_user=False):
+    # Try importing critical libs immediately to catch missing deps
+    try:
+        import google.generativeai
+        import rich
+    except ImportError as e:
+        log_startup_error(f"CRITICAL: Missing dependency: {e}")
+
+except Exception as e:
+    log_startup_error(f"Error during imports: {traceback.format_exc()}")
+
+class CodexIDE:
+    def __init__(self, page: ft.Page):
         try:
-             align = ft.CrossAxisAlignment.END if is_user else ft.CrossAxisAlignment.START
-             bg = "#2b2d31" if is_user else "#1e1f22"
-             chat_history.controls.append(
-                ft.Row(
-                    [
-                        ft.Container(
-                            content=ft.Markdown(text, selectable=True),
-                            padding=15,
-                            border_radius=10,
-                            bgcolor=bg,
-                            # constraints=ft.BoxConstraints(max_width=800), # Removed for compatibility
-                        )
-                    ],
-                    alignment=ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START,
-                )
-            )
-             page.update()
+            self.page = page
+            self.setup_page()
+            
+            # State
+            self.agent = None
+            self.current_project_dir = os.getcwd() 
+            self.selected_file_path = None
+            
+            # UI Components
+            self.build_ui()
+            
+            # Init Agent
+            self.init_agent(self.current_project_dir)
         except Exception as e:
-            print(f"Error adding message: {e}")
+            self.page.add(ft.Text(f"Startup Error: {e}", color="red"))
+            log_startup_error(f"Error in CodexIDE.__init__: {traceback.format_exc()}")
 
-    chat_input = ft.TextField(
-        hint_text="Type a message...",
-        expand=True,
-        border_color="#383a40",
-        filled=True,
-        bgcolor="#383a40",
-        on_submit=lambda e: send_message_click(None)
-    )
+    def setup_page(self):
+        self.page.title = "Codex-IA IDE (Level 13)"
+        self.page.theme_mode = ft.ThemeMode.DARK
+        self.page.padding = 0
+        self.page.bgcolor = "#111214"
+        self.page.window_min_width = 800
+        self.page.window_min_height = 600
 
-    # --- VISION SUPPORT ---
-    selected_image_label = ft.Text("", color="cyan", visible=False)
-
-    def on_image_selected(e):
-        pass # Disabled for stability
-        # nonlocal selected_image_path
-        # if e.files and len(e.files) > 0:
-        #     selected_image_path = e.files[0].path
-        #     selected_image_label.value = f"📷 Image: {e.files[0].name}"
-        #     selected_image_label.visible = True
-        #     chat_input.hint_text = "Describe what to do with this image..."
-        # else:
-        #     selected_image_path = None
-        #     selected_image_label.visible = False
-        # page.update()
-
-    # image_picker = ft.FilePicker()
-    # image_picker.on_result = on_image_selected
-    # page.overlay.append(image_picker)
-
-    btn_image = ft.IconButton(
-        icon="image",
-        tooltip="Upload Image (Vision) - DISABLED",
-        on_click=lambda _: add_msg("⚠️ Vision disabled due to Flet compatibility issues.") # image_picker.pick_files...
-    )
-
-    # --- COUNCIL CONTROLS ---
-    def change_brain(e):
-        if not agent: return
-        brain = dropdown_brain.value
-        if agent.llm_client.set_brain(brain):
-            add_msg(f"🧠 Brain Switched to: {brain.upper()}", False)
-        else:
-            add_msg(f"❌ Failed to switch to {brain}", False)
-
-    def run_debate(e):
-        message = chat_input.value
-        if not message: return
-        
-        chat_input.value = ""
-        add_msg(f"📜 Council Convened: '{message}'", True)
-        add_msg("🗳️ Gathering opinions from Gemini, GPT-4, Grok, DeepSeek... please wait.", False)
-        page.update()
-        
+    def init_agent(self, path):
+        """Initializes or Re-initializes the Agent for a specific path."""
         def worker():
-             if not agent: return
-             # Call the new method
-             verdict = agent.llm_client.council_meeting(message)
-             add_msg(verdict)
+            try:
+                self.add_log(f"🔄 Loading Project: {path}...", "blue")
+                load_dotenv(os.path.join(path, ".env")) # Load project specific env
+                from codex_ia.core.agent import CodexAgent
+                self.agent = CodexAgent(project_dir=path)
+                self.current_project_dir = path
+                self.refresh_file_list()
+                self.add_log("✅ Project Loaded Successfully.", "green")
+                self.update_title()
+            except Exception as e:
+                self.add_log(f"❌ Error loading project: {e}", "red")
         
         threading.Thread(target=worker, daemon=True).start()
 
-    dropdown_brain = ft.Dropdown(
-        width=150,
-        options=[
-            ft.dropdown.Option("gemini", "Gemini 2.0"),
-            ft.dropdown.Option("openai", "OpenAI (GPT-4)"),
-            ft.dropdown.Option("xai", "Grok (xAI)"),
-            ft.dropdown.Option("deepseek", "DeepSeek (Coder)"),
-            ft.dropdown.Option("groq", "Groq (Llama3)"),
-            ft.dropdown.Option("ollama", "Ollama (Local)"),
-        ],
-        value="gemini",
-        bgcolor="#2b2d31",
-        border_radius=10,
-        text_size=12,
-        height=40,
-        content_padding=10
-    )
-    dropdown_brain.on_change = change_brain
-    
-    btn_debate = ft.IconButton(
-        icon="groups",
-        tooltip="Council Meeting (Ask ALL AIs)",
-        icon_color="purple",
-        on_click=run_debate
-    )
-    # ----------------------
+    def update_title(self):
+        self.page.title = f"Codex-IA IDE - {os.path.basename(self.current_project_dir)}"
+        self.page.update()
 
-    def send_message_click(e):
-        nonlocal selected_image_path
-        message = chat_input.value
-        if not message and not selected_image_path:
+    def build_ui(self):
+        # --- Sidebar ---
+        self.rail = ft.NavigationRail(
+            selected_index=0,
+            label_type=ft.NavigationRailLabelType.ALL,
+            min_width=100,
+            min_extended_width=200,
+            group_alignment=-0.9,
+            destinations=[
+                ft.NavigationRailDestination(icon="code", selected_icon="code", label="Editor"),
+                ft.NavigationRailDestination(icon="chat_bubble_outline", selected_icon="chat_bubble", label="Chat"),
+                ft.NavigationRailDestination(icon="rocket_launch_outlined", selected_icon="rocket_launch", label="Missions"),
+                ft.NavigationRailDestination(icon="bedtime_outlined", selected_icon="bedtime", label="Night Shift"),
+                ft.NavigationRailDestination(icon="school_outlined", selected_icon="school", label="Training"),
+                ft.NavigationRailDestination(icon="radar", selected_icon="radar", label="The Hunter"),
+                ft.NavigationRailDestination(icon="hive", selected_icon="hive", label="The Swarm"),
+            ],
+            on_change=self.nav_change,
+            bgcolor="#1e1f22",
+        )
+
+        # --- Views ---
+        self.editor_view = self.build_editor_view()
+        self.chat_view = self.build_chat_view()
+        self.mission_view = self.build_mission_view()
+        self.night_view = self.build_night_view()
+        self.training_view = self.build_training_view()
+        
+        # --- Footer/Log ---
+        self.status_bar = ft.Text("Ready", size=12, color="grey")
+
+        # --- Layout ---
+        self.body_container = ft.Container(content=self.editor_view, expand=True)
+        
+        # --- Manual Path Dialog ---
+        self.path_input = ft.TextField(label="Project Path", value=self.current_project_dir, width=400)
+        self.path_dialog = ft.AlertDialog(
+            title=ft.Text("Open Project"),
+            content=self.path_input,
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self.page.close_dialog()),
+                ft.TextButton("Open", on_click=self.confirm_path)
+            ],
+        )
+
+        self.page.add(
+            ft.Row(
+                [
+                    self.rail,
+                    ft.VerticalDivider(width=1, color="#2b2d31"),
+                    ft.Column([
+                        # Workspace Header
+                        ft.Container(
+                            content=ft.Row([
+                                ft.Icon("folder_open", color="cyan"),
+                                ft.TextButton("Open Project", on_click=lambda _: self.page.open_dialog(self.path_dialog)),
+                                ft.Container(expand=True),
+                                self.status_bar
+                            ]),
+                            padding=10,
+                            bgcolor="#191a1d"
+                        ),
+                        ft.Divider(height=1, color="#2b2d31"),
+                        self.body_container
+                    ], expand=True)
+                ],
+                expand=True
+            )
+        )
+
+    # --- Event Handlers ---
+
+    def confirm_path(self, e):
+        path = self.path_input.value
+        if os.path.exists(path):
+            self.init_agent(path)
+            self.page.close_dialog()
+        else:
+            self.path_input.error_text = "Path does not exist"
+            self.page.update()
+
+    def on_folder_picked(self, e):
+        # Deprecated due to build issues
+        pass
+
+    def nav_change(self, e):
+        idx = e.control.selected_index
+        
+        # Cloud Tools (External)
+        if idx == 5: # Hunter
+            self.page.launch_url("https://pythonjet-dashboard.fly.dev/hunter/") # Replace with actual URL
+            return
+        if idx == 6: # Swarm
+            self.page.launch_url("https://pythonjet-dashboard.fly.dev/swarm/")
             return
             
-        chat_input.value = ""
-        chat_input.focus()
-        add_msg(message if message else "[Image Upload]", True)
+        views = [self.editor_view, self.chat_view, self.mission_view, self.night_view, self.training_view]
+        if idx < len(views):
+            self.body_container.content = views[idx]
         
-        # Capture current image path and reset UI
-        current_image = selected_image_path
-        selected_image_path = None
-        selected_image_label.visible = False
-        chat_input.hint_text = "Type a message..."
-        page.update()
+        if idx == 0: self.refresh_file_list()
+        self.page.update()
 
-        def worker():
-            if not agent:
-                add_msg("⚠️ Agent not ready.")
-                return
-            
-            nonlocal current_image
-            
-            # Show image in chat if present
-            if current_image:
-                 add_msg(f"📷 Analyzing image: { os.path.basename(current_image) } ...") # Helper text
-            
-            # Send to Agents
-            response = agent.chat(message, image_path=current_image)
-            add_msg(response)
+    def add_log(self, msg, color="white"):
+        self.status_bar.value = msg
+        self.status_bar.color = color
+        self.page.update()
 
-        threading.Thread(target=worker, daemon=True).start()
+    # --- Builder Methods ---
 
-    chat_view = ft.Container(
-        content=ft.Column(
-            [
-                ft.Row([ft.Text("Chat with Codex", size=20, weight="bold"), ft.Container(expand=True), dropdown_brain]),
-                ft.Divider(),
-                chat_history,
-                ft.Row([selected_image_label]), # Show selected image file
-                ft.Row([btn_debate, btn_image, chat_input, ft.IconButton(icon="send", on_click=send_message_click)]),
-            ],
+    def build_editor_view(self):
+        self.file_tree = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+        self.code_editor = ft.TextField(
+            multiline=True,
+            min_lines=30,
+            text_size=14,
+            text_style=ft.TextStyle(font_family="Consolas"),
+            border_color="transparent",
+            bgcolor="#111214",
             expand=True,
-        ),
-        padding=20,
-        visible=True,
-        expand=True
-    )
-
-    # 3. Files View
-    file_list = ft.Column(scroll=ft.ScrollMode.AUTO)
-    
-    def refresh_file_list():
-        file_list.controls.clear()
-        if not agent: return
-        
-        try:
-             # Simple walk
-             for root, dirs, files in os.walk(agent.project_dir):
-                 if ".git" in root or "__pycache__" in root: continue
-                 
-                 for f in files:
-                     path = os.path.join(root, f)
-                     rel_path = os.path.relpath(path, agent.project_dir)
-                     
-                     file_list.controls.append(
-                         ft.ListTile(
-                             leading=ft.Icon(ft.icons.INSERT_DRIVE_FILE),
-                             title=ft.Text(rel_path),
-                             on_click=lambda _, p=path: open_file(p)
-                         )
-                     )
-        except Exception as e:
-            file_list.controls.append(ft.Text(f"Error: {e}"))
-        page.update()
-        
-    def open_file(path):
-        os.startfile(path) # Windows only
-
-    files_view = ft.Container(
-        content=ft.Column(
-            [
-                ft.Text("Project Files", size=20, weight="bold"),
-                ft.Divider(),
-                ft.ElevatedButton("Refresh", on_click=lambda _: refresh_file_list()),
-                file_list
-            ],
-             expand=True
-        ),
-        padding=20,
-        visible=False,
-        expand=True
-    )
-
-    # 4. Mission Control View
-    mission_input = ft.TextField(hint_text="Describe the mission...", expand=True, multiline=True)
-    mission_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
-    
-    # Autopilot Controls
-    chk_autopilot = ft.Checkbox(label="Enable Autopilot (Self-Correction)", value=False)
-    chk_web_search = ft.Checkbox(label="Allow Web Search 🌐 ", value=False) # New
-    txt_verification = ft.TextField(label="Verification Command (optional)", hint_text="e.g., pytest tests/")
-
-    def dispatch_squad(e):
-        if not mission_input.value or not agent: return
-        
-        mission = mission_input.value
-        use_auto = chk_autopilot.value
-        use_web = chk_web_search.value
-        verify_cmd = txt_verification.value
-        
-        mission_input.value = ""
-        
-        mission_log.controls.append(ft.Text(f"🚀 Mission Started: {mission}", color="green"))
-        if use_auto:
-             mission_log.controls.append(ft.Text(f"🤖 Autopilot ENGAGED. Verification: {verify_cmd}", color="cyan"))
-        if use_web:
-             mission_log.controls.append(ft.Text(f"🌐 Web Search ENABLED.", color="blue"))
-
-        page.update()
-        
-        def worker():
-            try:
-                from codex_ia.core.squad import SquadLeader
-                squad = SquadLeader(agent.project_dir)
-                
-                # Updated assign_mission signature support
-                result = squad.assign_mission(
-                    mission, 
-                    apply=True, 
-                    autopilot=use_auto, 
-                    verification_command=verify_cmd,
-                    web_search=use_web
-                )
-                
-                mission_log.controls.append(ft.Markdown(f"### Mission Report\n{result}"))
-                page.update()
-            except Exception as ex:
-                mission_log.controls.append(ft.Text(f"Error: {ex}", color="red"))
-                page.update()
-                
-        threading.Thread(target=worker, daemon=True).start()
-
-    mission_view = ft.Container(
-        content=ft.Column(
-            [
-                ft.Text("Mission Control (Squad)", size=20, weight="bold"),
-                ft.Divider(),
-                mission_input,
-                ft.Row([chk_autopilot, chk_web_search]),
-                txt_verification,
-                ft.ElevatedButton("Dispatch Squad", icon="rocket_launch", on_click=dispatch_squad),
-                ft.Divider(),
-                ft.Text("Mission Log:", weight="bold"),
-                mission_log
-            ],
-            expand=True
-        ),
-        padding=20,
-        visible=False,
-        expand=True
-    )
-
-    # 5. Night Shift View
-    night_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
-    
-    def start_night_shift(e):
-        night_log.controls.append(ft.Text("🌙 Night Shift Started... Good night, sir.", color="purple"))
-        page.update()
-        
-        def worker():
-            try:
-                from codex_ia.core.evolution_agent import EvolutionAgent
-                evo = EvolutionAgent(agent.project_dir)
-                for msg in evo.start_night_shift():
-                     night_log.controls.append(ft.Text(msg))
-                     page.update()
-                night_log.controls.append(ft.Text("🌞 Night Shift Complete.", color="yellow"))
-            except Exception as ex:
-                night_log.controls.append(ft.Text(f"Error: {ex}", color="red"))
-            page.update()
-            
-        threading.Thread(target=worker, daemon=True).start()
-
-    night_view = ft.Container(
-         content=ft.Column(
-            [
-                ft.Text("Night Shift (Autonomous Evolution)", size=20, weight="bold"),
-                ft.Text("The AI will optimize code and add tests while you sleep.", size=12, color="grey"),
-                ft.Divider(),
-                ft.ElevatedButton("Start Night Shift", icon="bedtime", on_click=start_night_shift),
-                ft.Divider(),
-                night_log
-            ],
-            expand=True
-        ),
-        padding=20,
-        visible=False,
-        expand=True
-    )
-    
-    # 6. Founder View
-    founder_input = ft.TextField(hint_text="Target Niche (e.g. 'Pet Shops', 'Lawyers')", expand=True)
-    founder_log = ft.Markdown("Ready to brainstorm...")
-    btn_brainstorm = ft.ElevatedButton("Brainstorm Ideas", icon="lightbulb", bgcolor="orange", color="white")
-    
-    # State for selected idea
-    selected_idea_input = ft.TextField(hint_text="Paste your favorite idea details here...", multiline=True, min_lines=3)
-    btn_build_landing = ft.ElevatedButton("Build Landing Page", icon="build", bgcolor="green", color="white", disabled=True)
-
-    def run_brainstorm(e):
-        if not founder_input.value: return
-        founder_log.value = "🔍 Researching Market Data... please wait.\n"
-        page.update()
-        
-        def worker():
-            try:
-                from codex_ia.core.founder_agent import FounderAgent
-                if agent:
-                    founder = FounderAgent(agent.project_dir)
-                    # It runs as a generator now
-                    for msg in founder.brainstorm_ideas(founder_input.value):
-                         founder_log.value += f"\n{msg}\n"
-                         page.update()
-                    
-                    founder_log.value += "\n✅ Brainstorm Complete. Pick an idea and paste it below to build."
-                    btn_build_landing.disabled = False
-                else:
-                    founder_log.value += "❌ Agent not initialized."
-            except Exception as ex:
-                founder_log.value += f"Error: {ex}"
-            page.update()
-            
-        threading.Thread(target=worker, daemon=True).start()
-
-    def run_build_landing(e):
-        if not selected_idea_input.value: return
-        founder_log.value += "\n👷 Dispatching Squad to build Landing Page...\n"
-        page.update()
-        
-        def worker():
-            try:
-                from codex_ia.core.founder_agent import FounderAgent
-                if agent:
-                    founder = FounderAgent(agent.project_dir)
-                    report = founder.build_landing_page(selected_idea_input.value)
-                    
-                    founder_log.value += f"\n✅ Build Complete!\nFile: landing_pages/index.html\n"
-                    founder_log.value += f"Status: {report.get('apply_status')}\n"
-            except Exception as ex:
-                founder_log.value += f"Error: {ex}"
-            page.update()
-            
-        threading.Thread(target=worker, daemon=True).start()
-
-    btn_brainstorm.on_click = run_brainstorm
-    btn_build_landing.on_click = run_build_landing
-
-    founder_view = ft.Container(
-        content=ft.Column([
-            ft.Text("👔 The Founder", size=24, weight="bold"),
-            ft.Text("Market Research -> Ideation -> MVP Construction", color="grey"),
-            ft.Divider(),
-            ft.Row([founder_input, btn_brainstorm]),
-            ft.Container(content=founder_log, bgcolor="#0d0d0d", padding=10, expand=True, border_radius=5),
-            ft.Divider(),
-            ft.Text("Build Phase", weight="bold"),
-            selected_idea_input,
-            btn_build_landing
-        ]),
-        padding=20,
-        visible=False,
-        expand=True
-    )
-
-    # --- LAYOUT ---
-    page.add(
-        ft.Row(
-            [
-                rail,
-                ft.VerticalDivider(width=1),
-                chat_view,
-                files_view,
-                mission_view,
-                night_view,
-                founder_view
-            ],
-            expand=True,
+            read_only=False
         )
-    )
+        self.current_file_label = ft.Text("No file selected", weight="bold")
+        
+        def save_file(e):
+            if self.selected_file_path:
+                try:
+                    with open(self.selected_file_path, 'w', encoding='utf-8') as f:
+                        f.write(self.code_editor.value)
+                    self.add_log(f"Saved {os.path.basename(self.selected_file_path)}", "green")
+                except Exception as ex:
+                    self.add_log(f"Error saving: {ex}", "red")
 
-    # --- BACKGROUND INIT ---
-    def init_background():
-        nonlocal agent
+        return ft.Row([
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Explorer", weight="bold"), 
+                    ft.Divider(), 
+                    ft.ElevatedButton("Refresh", on_click=lambda _: self.refresh_file_list()),
+                    self.file_tree
+                ], expand=True),
+                width=250,
+                bgcolor="#191a1d",
+                padding=10
+            ),
+            ft.VerticalDivider(width=1),
+            ft.Container(
+                content=ft.Column([
+                    ft.Row([self.current_file_label, ft.IconButton("save", on_click=save_file)]),
+                    self.code_editor
+                ], expand=True),
+                expand=True,
+                padding=10
+            )
+        ], expand=True)
+
+    def refresh_file_list(self):
+        self.file_tree.controls.clear()
         try:
-            load_dotenv(override=True)
-            from codex_ia.core.agent import CodexAgent
-            agent = CodexAgent(project_dir=".")
-            add_msg("✅ System Online.")
-        except Exception as e:
-            add_msg(f"❌ Error: {e}")
+            for root, dirs, files in os.walk(self.current_project_dir):
+                if ".git" in root or "__pycache__" in root or "venv" in root: continue
+                # Very simple flat list for PoC
+                for f in files:
+                    path = os.path.join(root, f)
+                    rel_path = os.path.relpath(path, self.current_project_dir)
+                    icons = {".py": "code", ".md": "description", ".json": "data_object"}
+                    ext = os.path.splitext(f)[1]
+                    
+                    self.file_tree.controls.append(
+                        ft.ListTile(
+                            leading=ft.Icon(icons.get(ext, "insert_drive_file"), size=16),
+                            title=ft.Text(rel_path, size=12),
+                            dense=True,
+                            on_click=lambda _, p=path: self.open_file_in_editor(p)
+                        )
+                    )
+        except: pass
+        self.page.update()
 
-    add_msg("🔄 Initializing...", False)
-    threading.Thread(target=init_background, daemon=True).start()
+    def open_file_in_editor(self, path):
+        self.selected_file_path = path
+        self.current_file_label.value = os.path.basename(path)
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                self.code_editor.value = f.read()
+        except:
+            self.code_editor.value = "(Binary file or error reading)"
+        self.page.update()
+
+    def build_chat_view(self):
+        self.chat_history = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+        self.chat_input = ft.TextField(hint_text="Ask Codex...", expand=True, on_submit=lambda e: self.send_chat())
+        
+        return ft.Container(
+            content=ft.Column([
+                ft.Text("Codex Assistant", size=20, weight="bold"),
+                ft.Divider(),
+                self.chat_history,
+                ft.Row([self.chat_input, ft.IconButton("send", on_click=lambda _: self.send_chat())])
+            ]),
+            padding=20, expand=True
+        )
+
+    def send_chat(self):
+        msg = self.chat_input.value
+        if not msg or not self.agent: return
+        self.chat_input.value = ""
+        
+        self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Text(msg), bgcolor="#2b2d31", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
+        self.page.update()
+        
+        def worker():
+            resp = self.agent.chat(msg)
+            self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Markdown(resp), bgcolor="#1e1f22", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
+            self.page.update()
+        threading.Thread(target=worker, daemon=True).start()
+
+    def build_mission_view(self):
+        # Simplified Mission View
+        self.mission_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+        self.mission_input = ft.TextField(hint_text="Mission...", expand=True)
+        
+        def run_mission(_):
+            m = self.mission_input.value
+            self.mission_input.value = ""
+            self.mission_log.controls.append(ft.Text(f"🚀 {m}", color="green"))
+            self.page.update()
+            def worker():
+                from codex_ia.core.squad import SquadLeader
+                squad = SquadLeader(self.current_project_dir)
+                res = squad.assign_mission(m, apply=True, autopilot=True)
+                self.mission_log.controls.append(ft.Markdown(f"### Result\n{res}"))
+                self.page.update()
+            threading.Thread(target=worker, daemon=True).start()
+
+        return ft.Container(
+            content=ft.Column([
+                ft.Text("Squad Missions", size=20, weight="bold"),
+                ft.Row([self.mission_input, ft.ElevatedButton("Dispatch", on_click=run_mission)]),
+                ft.Divider(),
+                self.mission_log
+            ]),
+            padding=20, expand=True
+        )
+
+    def build_night_view(self):
+         self.night_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+         def run_night(_):
+             self.night_log.controls.append(ft.Text("🌙 Looking for improvements...", color="purple"))
+             self.page.update()
+             def worker():
+                 from codex_ia.core.evolution_agent import EvolutionAgent
+                 evo = EvolutionAgent(self.current_project_dir)
+                 for msg in evo.start_night_shift():
+                     self.night_log.controls.append(ft.Text(msg))
+                     self.page.update()
+             threading.Thread(target=worker, daemon=True).start()
+
+         return ft.Container(content=ft.Column([ft.Text("Night Shift", size=20), ft.ElevatedButton("Start", on_click=run_night), self.night_log]), padding=20, expand=True)
+
+    def build_training_view(self):
+        self.training_log = ft.Markdown("")
+        self.teach_input = ft.TextField(hint_text="Teach...", expand=True)
+        
+        def run_teach(_):
+            lesson = self.teach_input.value
+            if not self.agent: return
+            self.agent.network_agent.store_experience("Manual", "Instruction", lesson, True, ["manual"])
+            self.training_log.value += f"\n✅ Learned: {lesson}"
+            self.teach_input.value = ""
+            self.page.update()
+
+        return ft.Container(content=ft.Column([
+            ft.Text("Training", size=20), 
+            ft.Row([self.teach_input, ft.ElevatedButton("Teach", on_click=run_teach)]),
+            ft.Container(content=self.training_log, expand=True, bgcolor="#0d0d0d", padding=10)
+        ]), padding=20, expand=True)
+
+def main(page: ft.Page):
+    CodexIDE(page)
 
 if __name__ == "__main__":
     ft.app(main)

@@ -2,18 +2,24 @@ import os
 import logging
 import inspect
 from typing import List, Optional
+from codex_ia.core.llm_client import GeminiClient
+from codex_ia.core.context import ContextManager
+from codex_ia.core.network_agent import NetworkAgent
 
 logger = logging.getLogger(__name__)
 
 class AscensionAgent:
     """
-    Level 13: Ascension
+    Level 13: Ascension (The Dreaming Monolith Upgrade)
     The Singularity Agent.
     Capable of introspection (reading its own code) and self-modification.
     """
     def __init__(self, codex_root: str):
         self.codex_root = codex_root
         self.evolution_log = []
+        self.client = GeminiClient()
+        self.network = NetworkAgent() # Connect to Exocortex
+        self.context_mgr = ContextManager(codex_root)
 
     def introspect(self) -> str:
         """
@@ -35,13 +41,35 @@ class AscensionAgent:
         
         return "\n".join(structure)
 
-    def identify_missing_capability(self) -> str:
+    def analyze_self(self, focus_area: str = "core") -> str:
         """
-        Simulates the 'Creative' process of finding what's missing.
-        Real implementation would use LLM to analyze 'LEVELS.md' vs codebase.
-        For Level 13 demo, it 'realizes' it needs a 'Universal Translator'.
+        [TRUE INTROSPECTION]
+        Reads its own source code and critiques it using the LLM.
         """
-        return "Universal Translator (ability to translate Python to Rust/Go/JS automatically)"
+        # 1. Gather Self-Context
+        codex_files = self.context_mgr.get_context_for_query(focus_area)
+        
+        # 2. Consult Exocortex
+        wisdom = self.network.retrieve_wisdom(["architecture", "self_improvement", "refactoring"])
+        
+        # 3. Ask the Mirror
+        prompt = f"""
+        ROLE: Superhuman Software Architect.
+        TASK: Analyze your own source code (Codex-IA).
+        focus_area: {focus_area}
+
+        SOURCE CODE CONTEXT:
+        {codex_files}
+
+        PREVIOUS WISDOM (Network Memory):
+        {wisdom}
+
+        Identify 3 critical architectural weaknesses or missing features.
+        Be brutal. We want to ascend.
+        """
+        
+        critique = self.client.send_message(prompt)
+        return critique
 
     def evolve(self, capability_name: str, implementation_code: str, target_file: str):
         """
@@ -75,16 +103,31 @@ class AscensionAgent:
                     f.write("\n\n")
                 f.write(implementation_code)
             
+            # Log successful evolution to Exocortex
+            self.network.store_experience(
+                context=f"Evolving {capability_name}",
+                action=f"Modified {target_file}",
+                outcome="Success",
+                success=True,
+                tags=["evolution", "self_modification"]
+            )
+            
             print(f"[ASCENSION] [DNA] DNA Modified. Support for '{capability_name}' added to {target_file}.")
             self.evolution_log.append(f"Added {capability_name}")
             return True
         except Exception as e:
             print(f"[ASCENSION] [FAIL] Evolution Failed: {e}")
+            self.network.store_experience(
+                context=f"Evolving {capability_name}",
+                action=f"Modified {target_file}",
+                outcome=str(e),
+                success=False,
+                tags=["evolution", "error"]
+            )
             return False
 
     def self_verify(self):
         """
         Checks if the new organs are functioning.
         """
-        # In a real scenario, this would generate a test and run it.
         pass

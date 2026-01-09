@@ -85,6 +85,8 @@ def main():
                 [bold]Commands:[/bold]
                 /brain [name]   - Switch Active Brain (gemini, openai, groq, deepseek, xai, ollama)
                 /council [topic]- Convene The Council for multi-brain debate
+                /teach [lesson] - Manually add wisdom to Network Memory
+                /introspect     - Run Level 13 Self-Analysis
                 /squad [task]   - Dispatch the Autonomous Squad
                 /switch [path]  - Change project directory
                 exit            - Quit
@@ -113,6 +115,34 @@ def main():
                 with console.status("[bold purple]The Council is debating...[/bold purple]", spinner="earth"):
                      verdict = agent.llm_client.council_meeting(topic)
                 console.print(Panel(verdict, title="Council Verdict", border_style="purple"))
+                continue
+
+            # COMMAND: TEACH (MANUAL LEARNING)
+            if user_input.startswith("/teach "):
+                lesson = user_input.split(" ", 1)[1].strip()
+                # Auto-generate tags (naive)
+                tags = [w for w in lesson.split() if len(w) > 4]
+                
+                agent.network_agent.store_experience(
+                    context="Manual Teaching",
+                    action="User Instruction",
+                    outcome=lesson,
+                    success=True,
+                    tags=tags
+                )
+                console.print(f"[bold green]🧠 Wisdom Stored![/bold green] I will remember that regarding: {tags}")
+                continue
+
+            # COMMAND: INTROSPECT (LEVEL 13)
+            if user_input.startswith("/introspect"):
+                console.print("[bold pink1]🧘 Entering Meditative State (Introspection)...[/bold pink1]")
+                from codex_ia.core.ascension_agent import AscensionAgent
+                ascension = AscensionAgent(agent.project_dir)
+                
+                with console.status("[bold pink1]Analyzing my own source code...[/bold pink1]", spinner="aesthetic"):
+                     critique = ascension.analyze_self()
+                
+                console.print(Panel(critique, title="Self-Analysis Report", border_style="pink1"))
                 continue
 
             # COMMAND: SWITCH
