@@ -4,167 +4,332 @@
     "check_key.py": {
       "summary": "Module check_key.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.648416"
+      "last_updated": "2026-01-09T21:33:00.216514"
     },
     "codex_ia/__init__.py": {
       "summary": "Module codex_ia/__init__.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.658802"
+      "last_updated": "2026-01-09T21:33:00.384683"
     },
     "codex_ia/core/agent.py": {
-      "summary": "Module codex_ia/core/agent.py defines classes ['CodexAgent'] and functions ['chat', 'generate_codebase', 'add_file_to_context']",
+      "summary": "Module codex_ia/core/agent.py defines classes ['CodexAgent'] and functions ['set_context', 'chat', 'generate_codebase', 'add_file_to_context']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.663902"
+      "last_updated": "2026-01-09T21:33:00.384683"
     },
     "codex_ia/core/context.py": {
       "summary": "Module codex_ia/core/context.py defines classes ['ContextManager'] and functions ['list_files', 'build_graph', 'get_context', 'get_file_context']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.677690"
+      "last_updated": "2026-01-09T21:33:00.416355"
     },
     "codex_ia/core/evolution_agent.py": {
-      "summary": "Module codex_ia/core/evolution_agent.py defines classes ['EvolutionAgent'] and functions ['scan_for_improvements', 'auto_refactor', 'run_nightly_optimization']",
+      "summary": "Module codex_ia/core/evolution_agent.py defines classes ['EvolutionAgent'] and functions ['scan_for_improvements', 'start_night_shift']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.679706"
+      "last_updated": "2026-01-09T21:33:00.447944"
     },
     "codex_ia/core/knowledge_base.py": {
       "summary": "Module codex_ia/core/knowledge_base.py defines classes ['KnowledgeBase'] and functions ['save', 'update_file_summary', 'get_file_summary', 'set_project_summary', 'get_project_summary', 'update_scan_time']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.687370"
+      "last_updated": "2026-01-09T21:33:00.467409"
     },
     "codex_ia/core/llm_client.py": {
       "summary": "Module codex_ia/core/llm_client.py defines classes ['GeminiClient'] and functions ['start_chat', 'send_message', 'analyze_architecture', 'explain_code', 'refactor_code']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.689750"
+      "last_updated": "2026-01-09T21:33:00.479449"
     },
     "codex_ia/core/visionary_agent.py": {
       "summary": "Module codex_ia/core/visionary_agent.py defines classes ['VisionaryAgent'] and functions ['load_business_goals', 'align_code_with_goals']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.702797"
+      "last_updated": "2026-01-09T21:33:00.513507"
     },
     "codex_ia/main.py": {
       "summary": "Module codex_ia/main.py defines classes [] and functions ['audit', 'explain', 'refactor', 'immunity', 'ascension', 'chat']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.708453"
+      "last_updated": "2026-01-09T21:33:00.517543"
     },
     "setup.py": {
       "summary": "Module setup.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.710229"
+      "last_updated": "2026-01-09T21:33:00.526561"
     },
     "test_debt.py": {
       "summary": "Module test_debt.py defines classes [] and functions ['complex_function']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.713639"
+      "last_updated": "2026-01-09T21:33:00.526561"
     },
     "test_evolution.py": {
       "summary": "Module test_evolution.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.715191"
+      "last_updated": "2026-01-09T21:33:00.526561"
     },
     "test_graph.py": {
       "summary": "Module test_graph.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.716921"
+      "last_updated": "2026-01-09T21:33:00.542205"
     },
     "test_visionary.py": {
       "summary": "Module test_visionary.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.723080"
+      "last_updated": "2026-01-09T21:33:00.572170"
     },
     "web_app.py": {
       "summary": "Module web_app.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.725387"
+      "last_updated": "2026-01-09T21:33:00.576213"
     },
     "codex_ia/core/architect_agent.py": {
       "summary": "Module codex_ia/core/architect_agent.py defines classes ['ArchitectAgent'] and functions ['generate_design_doc']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.665609"
+      "last_updated": "2026-01-09T21:33:00.384683"
     },
     "test_architect.py": {
       "summary": "Module test_architect.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.711231"
+      "last_updated": "2026-01-09T21:33:00.526561"
     },
     "codex_ia/core/founder_agent.py": {
-      "summary": "Module codex_ia/core/founder_agent.py defines classes ['FounderAgent'] and functions ['brainstorm_ideas', 'generate_landing_page']",
+      "summary": "Module codex_ia/core/founder_agent.py defines classes ['FounderAgent', 'FounderAgent'] and functions ['brainstorm_ideas', 'build_landing_page']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.681410"
+      "last_updated": "2026-01-09T21:33:00.447944"
     },
     "codex_ia/core/product_manager.py": {
       "summary": "Module codex_ia/core/product_manager.py defines classes ['ProductManagerAgent'] and functions ['analyze_metrics', 'draft_user_stories']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.694916"
+      "last_updated": "2026-01-09T21:33:00.479449"
     },
     "codex_ia/core/squad.py": {
-      "summary": "Module codex_ia/core/squad.py defines classes ['BaseAgent', 'CoderAgent', 'TesterAgent', 'SquadLeader'] and functions ['chat', 'assign_mission']",
+      "summary": "Module codex_ia/core/squad.py defines classes ['BaseAgent', 'CoderAgent', 'TesterAgent', 'EngineerAgent', 'ExecutorAgent', 'ResearcherAgent', 'SquadLeader'] and functions ['chat', 'apply_changes', 'run_command', 'research', 'set_target', 'assign_mission']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.700795"
+      "last_updated": "2026-01-09T21:33:00.498595"
     },
     "test_founder.py": {
       "summary": "Module test_founder.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.716297"
+      "last_updated": "2026-01-09T21:33:00.526561"
     },
     "test_product_manager.py": {
       "summary": "Module test_product_manager.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.720954"
+      "last_updated": "2026-01-09T21:33:00.558165"
     },
     "test_squad.py": {
       "summary": "Module test_squad.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.722235"
+      "last_updated": "2026-01-09T21:33:00.567276"
     },
     "codex_cli.py": {
       "summary": "Module codex_cli.py defines classes [] and functions ['setup_environment', 'main']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.650430"
+      "last_updated": "2026-01-09T21:33:00.369188"
     },
     "codex_ia/core/ascension_agent.py": {
-      "summary": "Module codex_ia/core/ascension_agent.py defines classes ['AscensionAgent'] and functions ['introspect', 'identify_missing_capability', 'evolve', 'self_verify']",
+      "summary": "Module codex_ia/core/ascension_agent.py defines classes ['AscensionAgent'] and functions ['introspect', 'analyze_self', 'evolve', 'self_verify']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.669814"
+      "last_updated": "2026-01-09T21:33:00.391197"
     },
     "codex_ia/core/immunity_agent.py": {
       "summary": "Module codex_ia/core/immunity_agent.py defines classes ['SafetyHandler', 'ImmunityAgent'] and functions ['on_modified', 'activate_watchdog', 'stop', 'verify_stability']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.685623"
+      "last_updated": "2026-01-09T21:33:00.456966"
     },
     "codex_ia/core/network_agent.py": {
-      "summary": "Module codex_ia/core/network_agent.py defines classes ['NetworkAgent'] and functions ['register_project', 'learn_pattern', 'recall_pattern', 'search_memory', 'broadcast_lesson']",
+      "summary": "Module codex_ia/core/network_agent.py defines classes ['MemoryEntry', 'CodexMemory', 'NetworkAgent'] and functions ['save', 'add_short_term', 'commit_to_long_term', 'retrieve', 'store_experience', 'retrieve_wisdom', 'register_project']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.693684"
+      "last_updated": "2026-01-09T21:33:00.479449"
     },
     "codex_ia/core/safety.py": {
       "summary": "Module codex_ia/core/safety.py defines classes ['SafetyProtocol'] and functions ['create_backup', 'quarantine_file', 'validate_operation']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.698347"
+      "last_updated": "2026-01-09T21:33:00.495078"
     },
     "test_ascension.py": {
       "summary": "Module test_ascension.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.712227"
+      "last_updated": "2026-01-09T21:33:00.526561"
     },
     "test_immunity.py": {
       "summary": "Module test_immunity.py defines classes [] and functions ['mock_revert']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.718462"
+      "last_updated": "2026-01-09T21:33:00.558165"
     },
     "test_network.py": {
       "summary": "Module test_network.py defines classes [] and functions []",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.719727"
+      "last_updated": "2026-01-09T21:33:00.558165"
     },
     "codex_gui.py": {
-      "summary": "Module codex_gui.py defines classes [] and functions ['main', 'switch_tab', 'add_msg', 'send_message', 'refresh_file_list', 'load_file', 'init_background']",
+      "summary": "Module codex_gui.py defines classes ['CodexIDE'] and functions ['log_startup_error', 'main', 'setup_page', 'init_agent', 'update_title', 'build_ui', 'confirm_path', 'on_folder_picked', 'nav_change', 'add_log', 'build_editor_view', 'refresh_file_list', 'open_file_in_editor', 'build_chat_view', 'send_chat', 'build_mission_view', 'build_night_view', 'build_training_view', 'worker', 'save_file', 'worker', 'run_mission', 'run_night', 'run_teach', 'worker', 'worker']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.657737"
+      "last_updated": "2026-01-09T21:33:00.384683"
     },
     "debug_gui.py": {
       "summary": "Module debug_gui.py defines classes [] and functions ['main']",
       "hash": "HASH_TODO",
-      "last_updated": "2026-01-06T22:36:14.709324"
+      "last_updated": "2026-01-09T21:33:00.517543"
+    },
+    "build.py": {
+      "summary": "Module build.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.210484"
+    },
+    "check_env.py": {
+      "summary": "Module check_env.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.210484"
+    },
+    "codex-desktop-v2/backend/app.py": {
+      "summary": "Module codex-desktop-v2/backend/app.py defines classes [] and functions ['main']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.226554"
+    },
+    "codex-desktop-v2/backend/codex_ia/__init__.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/__init__.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.226554"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/agent.py defines classes ['CodexAgent'] and functions ['set_context', 'chat', 'generate_codebase', 'add_file_to_context']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.226554"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/architect_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/architect_agent.py defines classes ['ArchitectAgent'] and functions ['generate_design_doc']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.226554"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/ascension_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/ascension_agent.py defines classes ['AscensionAgent'] and functions ['introspect', 'analyze_self', 'evolve', 'self_verify']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.226554"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/brain_router.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/brain_router.py defines classes ['GroqClient', 'OllamaClient', 'OpenAIClient', 'XAIClient', 'DeepSeekClient', 'BrainRouter'] and functions ['send_message', 'send_message', 'send_message', 'send_message', 'send_message', 'set_brain', 'get_active_brain', 'send_message', 'council_meeting']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.249698"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/context.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/context.py defines classes ['ContextManager'] and functions ['list_files', 'build_graph', 'get_context', 'get_file_context']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.259726"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/ecommerce_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/ecommerce_agent.py defines classes ['SupplierInterface', 'NotificationService', 'SalesManager', 'EcommerceAgent'] and functions ['check_stock', 'fulfill_order', 'send_alert', 'simulate_sale', 'find_winning_product', 'build_storefront', 'generate_ads', 'run_business_cycle']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.259726"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/evolution_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/evolution_agent.py defines classes ['EvolutionAgent'] and functions ['scan_for_improvements', 'start_night_shift']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.274347"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/founder_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/founder_agent.py defines classes ['FounderAgent', 'FounderAgent'] and functions ['brainstorm_ideas', 'build_landing_page']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.275934"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/immunity_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/immunity_agent.py defines classes ['SafetyHandler', 'ImmunityAgent'] and functions ['on_modified', 'activate_watchdog', 'stop', 'verify_stability']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.282520"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/knowledge_base.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/knowledge_base.py defines classes ['KnowledgeBase'] and functions ['save', 'update_file_summary', 'get_file_summary', 'set_project_summary', 'get_project_summary', 'update_scan_time']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.290013"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/llm_client.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/llm_client.py defines classes ['GeminiClient'] and functions ['start_chat', 'send_message', 'analyze_architecture', 'explain_code', 'refactor_code']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.300027"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/network_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/network_agent.py defines classes ['MemoryEntry', 'CodexMemory', 'NetworkAgent'] and functions ['save', 'add_short_term', 'commit_to_long_term', 'retrieve', 'store_experience', 'retrieve_wisdom', 'register_project']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.306044"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/product_manager.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/product_manager.py defines classes ['ProductManagerAgent'] and functions ['analyze_metrics', 'draft_user_stories']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.306044"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/safety.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/safety.py defines classes ['SafetyProtocol'] and functions ['create_backup', 'quarantine_file', 'validate_operation']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.306044"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/squad.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/squad.py defines classes ['BaseAgent', 'CoderAgent', 'TesterAgent', 'EngineerAgent', 'ExecutorAgent', 'ResearcherAgent', 'SquadLeader'] and functions ['chat', 'apply_changes', 'run_command', 'research', 'set_target', 'assign_mission']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.325696"
+    },
+    "codex-desktop-v2/backend/codex_ia/core/visionary_agent.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/core/visionary_agent.py defines classes ['VisionaryAgent'] and functions ['load_business_goals', 'align_code_with_goals']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.337711"
+    },
+    "codex-desktop-v2/backend/codex_ia/main.py": {
+      "summary": "Module codex-desktop-v2/backend/codex_ia/main.py defines classes [] and functions ['audit', 'explain', 'refactor', 'immunity', 'ascension', 'chat']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.353027"
+    },
+    "codex_ia/core/brain_router.py": {
+      "summary": "Module codex_ia/core/brain_router.py defines classes ['GroqClient', 'OllamaClient', 'OpenAIClient', 'XAIClient', 'DeepSeekClient', 'BrainRouter'] and functions ['send_message', 'send_message', 'send_message', 'send_message', 'send_message', 'set_brain', 'get_active_brain', 'send_message', 'council_meeting']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.400711"
+    },
+    "codex_ia/core/ecommerce_agent.py": {
+      "summary": "Module codex_ia/core/ecommerce_agent.py defines classes ['SupplierInterface', 'NotificationService', 'SalesManager', 'EcommerceAgent'] and functions ['check_stock', 'fulfill_order', 'send_alert', 'simulate_sale', 'find_winning_product', 'build_storefront', 'generate_ads', 'run_business_cycle']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.435257"
+    },
+    "debug_init.py": {
+      "summary": "Module debug_init.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.517543"
+    },
+    "fix_env_encoding.py": {
+      "summary": "Module fix_env_encoding.py defines classes [] and functions ['fix_env']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.526561"
+    },
+    "simulate_dropshipping.py": {
+      "summary": "Module simulate_dropshipping.py defines classes [] and functions ['run_simulation']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.526561"
+    },
+    "test_autopilot.py": {
+      "summary": "Module test_autopilot.py defines classes [] and functions ['test_autopilot_self_correction']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.526561"
+    },
+    "test_output/check.py": {
+      "summary": "Module test_output/check.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.558165"
+    },
+    "test_output/target.py": {
+      "summary": "Module test_output/target.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.558165"
+    },
+    "test_researcher.py": {
+      "summary": "Module test_researcher.py defines classes [] and functions ['test_researcher']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.567276"
+    },
+    "test_service_sync.py": {
+      "summary": "Module test_service_sync.py defines classes [] and functions []",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.567276"
+    },
+    "test_upgrade_verify.py": {
+      "summary": "Module test_upgrade_verify.py defines classes [] and functions ['test_engineer', 'test_squad_plan']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.567276"
+    },
+    "verify_dreaming_monolith.py": {
+      "summary": "Module verify_dreaming_monolith.py defines classes [] and functions ['verify_monolith']",
+      "hash": "HASH_TODO",
+      "last_updated": "2026-01-09T21:33:00.575193"
     }
   },
   "dependencies": {},

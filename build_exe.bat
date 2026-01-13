@@ -15,7 +15,7 @@ pip install "flet[all]" google-genai rich python-dotenv
 echo [3/4] Running Flet Pack...
 :: 'flet pack' wraps PyInstaller and automatically handles Flet's hidden imports and asset bundling.
 :: This solves the common "charade" of Flet build failures.
-flet pack codex_gui.py --name "CodexIDE" --product-name "Codex-IA" --file-description "Advanced AI IDE" -y
+flet pack codex_gui.py --name "CodexIA_Triad" --product-name "Codex-IA" --file-description "Advanced AI IDE (God Mode)" --hidden-import "codex_ia" --hidden-import "codex_ia.neural_link" --hidden-import "codex_ia.core" -y
 
 echo [4/4] Build Complete.
 echo.

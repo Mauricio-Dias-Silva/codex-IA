@@ -1,0 +1,20 @@
+=== CODEX DESKTOP (TRIAD EDITION) ===
+
+CONGRATULATIONS. You hold the "Body" of the Triad.
+
+INSTALLATION:
+1. Look for the `dist` folder. Inside is `CodexIA_Triad.exe`.
+2. You can move the entire `dist` folder to any computer (Windows).
+3. Run `CodexIA_Triad.exe`.
+
+CONNECTION:
+- The app will automatically try to connect to your PythonJet Server.
+- Default: http://localhost:8000
+- If the server is offline, it falls back to Local Mode.
+
+GOD MODE:
+- Go to the "Council" tab.
+- Ask a complex question.
+- Watch the Singularity Engine (DeepSeek/Gemini/GPT) respond from the cloud.
+
+© 2026 Mauricio & The Council
