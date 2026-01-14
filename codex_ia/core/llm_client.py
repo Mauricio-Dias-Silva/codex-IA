@@ -154,4 +154,18 @@ class GeminiClient:
                 temperature=0.2,
             )
         )
-        return response.text
+    def embed_content(self, text: str) -> list:
+        """
+        Generates embeddings for a given text using Gemini.
+        """
+        try:
+            # Using the embedding model
+            result = self.client.models.embed_content(
+                model="text-embedding-004",
+                contents=text
+            )
+            return result.embeddings[0].values
+        except Exception as e:
+            # Fallback or error logging
+            print(f"Embedding Error: {e}")
+            return []
