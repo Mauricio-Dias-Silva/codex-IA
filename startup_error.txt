@@ -1,0 +1,30 @@
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 41, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 114, in build_ui
+    self.swarm_view = self.build_swarm_view()
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 459, in build_swarm_view
+    return ft.Container(content=ft.Text("The Swarm Node - Active", size=20), padding=20, alignment=ft.alignment.center)
+                                                                                                   ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'flet.controls.alignment' has no attribute 'center'
+
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 41, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 117, in build_ui
+    self.neural_view = self.build_neural_view() # [PHASE 5]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 560, in build_neural_view
+    prefix_icon=ft.icons.SEARCH,
+                ^^^^^^^^^^^^^^^
+AttributeError: module 'flet.controls.material.icons' has no attribute 'SEARCH'
+
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 33, in __init__
+    self.setup_page()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 54, in setup_page
+    self.page.bgcolor = ft.colors.TRANSPARENT # Glass Effect
+                        ^^^^^^^^^
+AttributeError: module 'flet' has no attribute 'colors'
+
