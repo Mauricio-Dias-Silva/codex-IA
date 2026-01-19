@@ -55,7 +55,7 @@ class CodexIDE:
         self.page.window_min_height = 600
         self.page.window_frameless = False
         self.page.window_title_bar_hidden = False
-        self.page.window_center()
+        # self.page.window_center() # Deprecated in newer Flet versions
 
     def init_agent(self, path):
         """Initializes or Re-initializes the Agent for a specific path."""
@@ -664,7 +664,7 @@ class CodexIDE:
             padding=30,
             expand=True,
             bgcolor="#0a0a0c", # Darker "Void" background
-            image_src="", # Could add a cool HUD background image here later
+            # image_src="", # Could add a cool HUD background image here later
             border=ft.border.all(1, "cyan"),
             border_radius=10
         )
@@ -713,6 +713,9 @@ class CodexIDE:
             self.voice_agent.speak("Todos os sistemas operacionais. Nível de inteligência estável.")
         else:
             self.voice_agent.speak("Comando não reconhecido.")
+
+    def filter_neural_grid(self, e):
+        self.load_neural_grid(self.neural_search.value)
 
     def load_neural_grid(self, query=""):
         self.neural_grid.controls.clear()
