@@ -42,6 +42,7 @@ class CodexIDE:
             
             # Init Agent
             self.init_agent(self.current_project_dir)
+            self.page.update()
         except Exception as e:
             self.page.add(ft.Text(f"Startup Error: {e}", color="red"))
             log_startup_error(f"Error in CodexIDE.__init__: {traceback.format_exc()}")
@@ -161,15 +162,13 @@ class CodexIDE:
                 ft.NavigationRailDestination(icon="chat_bubble_outline", selected_icon="chat_bubble", label="Chat"),
                 ft.NavigationRailDestination(icon="rocket_launch_outlined", selected_icon="rocket_launch", label="Missions"),
                 ft.NavigationRailDestination(icon="bedtime_outlined", selected_icon="bedtime", label="Night Shift"),
-                # Humanity / Education
                 ft.NavigationRailDestination(icon="memory", selected_icon="memory", label="IoT Lab"),
                 ft.NavigationRailDestination(icon="school_outlined", selected_icon="school", label="Tutor"),
-                # Business Intel
                 ft.NavigationRailDestination(icon="radar", selected_icon="radar", label="The Hunter"),
                 ft.NavigationRailDestination(icon="hive", selected_icon="hive", label="The Swarm"),
                 ft.NavigationRailDestination(icon="groups", selected_icon="groups", label="The Council"),
                 ft.NavigationRailDestination(icon="monetization_on", selected_icon="monetization_on", label="Shark Tank"),
-                ft.NavigationRailDestination(icon="apps", selected_icon="apps_outage", label="Neural OS"), # [PHASE 5]
+                ft.NavigationRailDestination(icon="apps", selected_icon="apps_outage", label="Neural OS"),
             ],
             on_change=self.nav_change,
             bgcolor="#1e1f22",
@@ -180,20 +179,25 @@ class CodexIDE:
         self.chat_view = self.build_chat_view()
         self.mission_view = self.build_mission_view()
         self.night_view = self.build_night_view()
-        # self.training_view = self.build_training_view() # Replaced by Tutor
         self.iot_view = self.build_iot_view()
         self.tutor_view = self.build_tutor_view()
         self.hunter_view = self.build_hunter_view()
         self.swarm_view = self.build_swarm_view()
         self.council_view = self.build_council_view()
         self.shark_view = self.build_shark_view()
-        self.neural_view = self.build_neural_view() # [PHASE 5]
+        self.neural_view = self.build_neural_view()
         
         # --- Footer/Log ---
         self.status_bar = ft.Text("Ready", size=12, color="grey")
 
-        # --- Layout ---
-        self.body_container = ft.Container(content=self.editor_view, expand=True)
+        # --- Main Layout Container ---
+        # This container holds the active view (Editor, Chat, etc.)
+        self.body_container = ft.Container(
+            content=self.editor_view, 
+            expand=True, 
+            bgcolor="#111214",
+            padding=5
+        )
         
         # --- Manual Path Dialog ---
         self.path_input = ft.TextField(label="Project Path", value=self.current_project_dir, width=400)
@@ -206,28 +210,37 @@ class CodexIDE:
             ],
         )
 
+        # --- FINAL LAYOUT CONSTRUCTION ---
+        # Using a simple Row to divide Sidebar from Main Content
         self.page.add(
             ft.Row(
                 [
-                    self.rail,
-                    ft.VerticalDivider(width=1, color="#2b2d31"),
-                    ft.Column([
-                        # Workspace Header
-                        ft.Container(
-                            content=ft.Row([
-                                ft.Icon("folder_open", color="cyan"),
-                                ft.TextButton("Open Project", on_click=lambda _: self.page.open_dialog(self.path_dialog)),
-                                ft.Container(expand=True),
-                                self.status_bar
-                            ]),
-                            padding=10,
-                            bgcolor="#191a1d"
-                        ),
-                        ft.Divider(height=1, color="#2b2d31"),
-                        self.body_container
-                    ], expand=True)
+                    # Col 1: Sidebar
+                    ft.Container(content=self.rail, width=100, bgcolor="#1e1f22"),
+                    
+                    # Col 2: Main Application Area
+                    ft.Container(
+                        content=ft.Column([
+                            # Header
+                            ft.Container(
+                                content=ft.Row([
+                                    ft.Icon("folder_open", color="cyan"),
+                                    ft.TextButton("Open Project", on_click=lambda _: self.page.open_dialog(self.path_dialog)),
+                                    ft.Container(expand=True),
+                                    self.status_bar
+                                ]),
+                                padding=5,
+                                height=40,
+                                bgcolor="#191a1d"
+                            ),
+                            # Active View
+                            self.body_container
+                        ], spacing=0, expand=True),
+                        expand=True 
+                    )
                 ],
-                expand=True
+                expand=True,
+                spacing=0
             )
         )
 
@@ -277,11 +290,14 @@ class CodexIDE:
     # --- Builder Methods ---
 
     def build_editor_view(self):
+        # 1. File Explorer
         self.file_tree = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+        
+        # 2. Code Editor
         self.code_editor = ft.TextField(
             multiline=True,
             min_lines=30,
-            text_size=14,
+            text_size=14, 
             text_style=ft.TextStyle(font_family="Consolas"),
             border_color="transparent",
             bgcolor="#111214",
@@ -299,28 +315,35 @@ class CodexIDE:
                 except Exception as ex:
                     self.add_log(f"Error saving: {ex}", "red")
 
-        return ft.Row([
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("Explorer", weight="bold"), 
-                    ft.Divider(), 
-                    ft.ElevatedButton("Refresh", on_click=lambda _: self.refresh_file_list()),
-                    self.file_tree
-                ], expand=True),
-                width=250,
-                bgcolor="#191a1d",
-                padding=10
-            ),
-            ft.VerticalDivider(width=1),
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([self.current_file_label, ft.IconButton("save", on_click=save_file)]),
-                    self.code_editor
-                ], expand=True),
-                expand=True,
-                padding=10
-            )
-        ], expand=True)
+        # 3. Assemble Editor View (Row: Explorer | Editor)
+        return ft.Row(
+            [
+                # Col 1: Explorer
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Explorer", weight="bold"), 
+                        ft.Divider(height=1, color="#333"), 
+                        ft.ElevatedButton("Refresh", on_click=lambda _: self.refresh_file_list(), height=30),
+                        self.file_tree
+                    ], spacing=5, expand=True),
+                    width=250,
+                    bgcolor="#191a1d",
+                    padding=10
+                ),
+                # Col 2: Editor
+                ft.Container(
+                    content=ft.Column([
+                        ft.Row([self.current_file_label, ft.IconButton(icon="save", on_click=save_file)]),
+                        self.code_editor
+                    ], spacing=5, expand=True),
+                    expand=True,
+                    padding=10,
+                    bgcolor="#111214"
+                )
+            ],
+            expand=True,
+            spacing=2 
+        )
 
     def refresh_file_list(self):
         self.file_tree.controls.clear()
@@ -364,7 +387,7 @@ class CodexIDE:
                 ft.Text("Codex Assistant", size=20, weight="bold"),
                 ft.Divider(),
                 self.chat_history,
-                ft.Row([self.chat_input, ft.IconButton("send", on_click=lambda _: self.send_chat())])
+                ft.Row([self.chat_input, ft.IconButton(icon="send", on_click=lambda _: self.send_chat())])
             ]),
             padding=20, expand=True
         )
