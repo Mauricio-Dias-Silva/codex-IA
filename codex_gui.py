@@ -480,10 +480,19 @@ class CodexIDE:
         self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Text(msg), bgcolor="#2b2d31", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
         self.page.update()
         
+        # [MEMORY HOOK] User Message
+        if self.vector_store:
+            threading.Thread(target=self.vector_store.index_chat, args=("USER", msg), daemon=True).start()
+        
         def worker():
             resp = self.agent.chat(msg)
             self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Markdown(resp), bgcolor="#1e1f22", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
             self.page.update()
+            
+            # [MEMORY HOOK] AI Response
+            if self.vector_store:
+                self.vector_store.index_chat("CODEX", resp)
+                
         threading.Thread(target=worker, daemon=True).start()
 
     def build_mission_view(self):
@@ -632,7 +641,77 @@ class CodexIDE:
         ]), padding=20, expand=True)
 
     def build_swarm_view(self):
-        return ft.Container(content=ft.Text("The Swarm Node - Active", size=20), padding=20, alignment=ft.Alignment(0, 0))
+        self.swarm_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+        self.mission_input = ft.TextField(hint_text="Describe the mission for the Swarm...", expand=True)
+        
+        # Init Swarm Backend
+        try:
+            from codex_ia.core.swarm.orchestrator import SwarmOrchestrator
+            from codex_ia.core.swarm.specialists import ArchitectAgent, DeveloperAgent, QAAgent
+            
+            self.swarm = SwarmOrchestrator()
+            self.swarm.register_agent(ArchitectAgent())
+            self.swarm.register_agent(DeveloperAgent())
+            self.swarm.register_agent(QAAgent())
+            
+        except Exception as e:
+            self.add_log(f"Swarm Init Error: {e}", "red")
+            self.swarm = None
+
+        def run_mission(_):
+            goal = self.mission_input.value
+            if not goal or not self.swarm: return
+            
+            self.mission_input.value = ""
+            self.swarm_log.controls.append(ft.Text(f"🚀 MISSION STARTED: {goal}", weight="bold", size=16, color="yellow"))
+            self.page.update()
+            
+            def worker():
+                # Stream logs via simple polling of message bus (Prototype)
+                # In real prod, use callbacks. Here we just run synchronous for simplicity of demo
+                
+                res = self.swarm.start_mission(goal)
+                
+                # Render the conversation from bus
+                for msg in self.swarm.message_bus:
+                    color = "white"
+                    if "Architect" in msg: color = "cyan"
+                    elif "Developer" in msg: color = "green"
+                    elif "QA" in msg: color = "red"
+                    
+                    self.swarm_log.controls.append(ft.Text(msg, color=color, font_family="Consolas"))
+                    self.page.update()
+                    time.sleep(0.5) # Cinema effect
+                
+                self.swarm_log.controls.append(ft.Divider())
+                self.swarm_log.controls.append(ft.Markdown(f"### Final Report\n{res}"))
+                self.page.update()
+
+            threading.Thread(target=worker, daemon=True).start()
+
+        return ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    ft.Icon("hive", color="yellow", size=30),
+                    ft.Text("The Swarm (Multi-Agent System)", size=20, weight="bold"),
+                    ft.Container(expand=True),
+                    ft.Chip(label="Architect: DaVinci", bgcolor="cyan"),
+                    ft.Chip(label="Dev: Alan", bgcolor="green"),
+                    ft.Chip(label="QA: Grace", bgcolor="red"),
+                ]),
+                ft.Row([self.mission_input, ft.ElevatedButton("Deploy Swarm", on_click=run_mission, icon="rocket_launch")]),
+                ft.Divider(),
+                ft.Container(
+                    content=self.swarm_log,
+                    bgcolor="#111214",
+                    padding=10,
+                    border_radius=10,
+                    expand=True,
+                    border=ft.border.all(1, "yellow")
+                )
+            ]),
+            padding=20, expand=True
+        )
 
     def build_council_view(self):
         self.council_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)

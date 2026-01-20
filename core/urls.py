@@ -14,6 +14,7 @@ urlpatterns = [
     # API Endpoints
     path('api/chat/', views.api_chat, name='api_chat'),
     path('api/parallel-chat/', views.api_parallel_chat, name='api_parallel_chat'),
+    path('api/generate-image/', views.api_generate_image, name='api_generate_image'),
     path('api/mission/', views.api_mission, name='api_mission'),
     path('api/night-shift/', views.api_night_shift, name='api_night_shift'),
     path('api/hunter/', views.api_hunter, name='api_hunter'),

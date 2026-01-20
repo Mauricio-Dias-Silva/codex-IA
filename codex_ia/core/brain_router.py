@@ -3,7 +3,18 @@ import os
 import requests
 import json
 import logging
+import random  # Para mensagens criativas
 from .llm_client import GeminiClient
+
+# 🎭 Mensagens criativas quando IA falha
+MENSAGENS_CRIATIVAS = [
+    "💤 {ia} tirou um cochilo",
+    "⚡ {ia} esqueceu de pagar a conta",
+    "☕ {ia} saiu tomar café",
+    "🤕 {ia} tá de ressaca digital",
+    "🏖️ {ia} bateu a cota, foi descansar",
+    "🐕 {ia} foi brincar com o cachorro",
+]
 
 class GroqClient:
     def __init__(self):
@@ -204,7 +215,7 @@ class MistralClient:
 class ClaudeClient:
     def __init__(self):
         self.api_key = os.getenv("ANTHROPIC_API_KEY")
-        self.model = "claude-3-5-sonnet-20241022"
+        self.model = "claude-3-5-sonnet-20240620"
         self.base_url = "https://api.anthropic.com/v1/messages"
 
     def send_message(self, message, web_search=False, image_path=None):
@@ -357,8 +368,8 @@ class BrainRouter:
         if os.getenv("MISTRAL_API_KEY"):
             self.neurons["mistral"] = MistralClient()
         
-        if os.getenv("ANTHROPIC_API_KEY"):
-            self.neurons["claude"] = ClaudeClient()
+        # if os.getenv("ANTHROPIC_API_KEY"):
+        #     self.neurons["claude"] = ClaudeClient()  # Temporariamente desabilitado - modelo incorreto
         
         if os.getenv("COHERE_API_KEY"):
             self.neurons["cohere"] = CohereClient()
@@ -554,7 +565,19 @@ class BrainRouter:
             for future in as_completed(futures):
                 ai_name, response, error = future.result()
                 if error:
-                    errors[ai_name] = error
+                    # Mensagem criativa
+                    msg_criativa = random.choice(MENSAGENS_CRIATIVAS).format(ia=ai_name.upper())
+                    
+                    # Simplificar erro técnico (remover JSON gigante)
+                    erro_tecnico = str(error)
+                    if "429" in erro_tecnico or "quota" in erro_tecnico.lower():
+                        erro_tecnico = "Cota de API excedida ou Too Many Requests"
+                    elif "404" in erro_tecnico:
+                        erro_tecnico = "Modelo não encontrado ou indisponível"
+                    else:
+                        erro_tecnico = erro_tecnico[:50] + "..." # Cortar erros longos
+                        
+                    errors[ai_name] = f"{msg_criativa} (Info: {erro_tecnico})"
                 else:
                     partial_results[ai_name] = response
         
@@ -568,25 +591,33 @@ class BrainRouter:
                 'synthesis': ''
             }
         
+        
         # Synthesis
-        synthesis_prompt = f'''Você é sintetizador de um consórcio de IAs.
+        participantes = ", ".join([ai.upper() for ai in partial_results.keys()])
+        
+        synthesis_prompt = f'''Você é o SECRETÁRIO DO CONSELHO de Inteligências Artificiais.
+        
+PERGUNTA DO USUÁRIO: "{message}"
 
-PERGUNTA: "{message}"
+IAs PARTICIPANTES: {participantes}
 
-RESPOSTAS:
+OPINIÕES INDIVIDUAIS:
 '''
         for ai, resp in partial_results.items():
-            synthesis_prompt += f"\n--- {ai.upper()}: {resp}\n"
+            synthesis_prompt += f"\n👉 {ai.upper()}:\n{resp}\n"
         
         synthesis_prompt += '''
         
-MISSÃO:
-1. Combine o melhor de cada perspectiva
-2. Crie resposta coerente em português
-3. Destaque consensos e divergências
-4. Seja mais completa que qualquer resposta individual
+SUA MISSÃO - RELATÓRIO FINAL:
+1. Inicie com: "🎙️ **Relatório do Conselho**"
+2. Liste quem participou do debate.
+3. Resuma os pontos de consenso (onde todos concordaram).
+4. Destaque opiniões únicas ou divergentes importantes.
+5. Conclua com a MELHOR resposta unificada possível.
+6. Use formatação Markdown (negrito, listas) para facilitar a leitura.
+7. Seja profissional e direto.
 
-Retorne APENAS a síntese final.
+MENSAGEM SECRETA PARA ERROS: Se alguma IA falhou (não está na lista), ignore-a silenciamente na síntese.
 '''
         
         synthesizer = (self.neurons.get('claude') or 

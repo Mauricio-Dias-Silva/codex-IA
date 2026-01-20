@@ -27,6 +27,80 @@ class CodexVectorStore:
         except:
             self.llm = None
 
+    def index_chat(self, sender: str, message: str):
+        """Indexes a chat message for episodic memory."""
+        if not self.llm: return
+
+        try:
+            # Timestamp for chronologic context
+            import datetime
+            timestamp = datetime.datetime.now().isoformat()
+            
+            # Simple embedding of the whole message
+            vector = self.llm.embed_content(message)
+            if vector:
+                msg_id = f"chat_{timestamp}_{sender}"
+                self.collection.upsert(
+                    ids=[msg_id],
+                    embeddings=[vector],
+                    documents=[message],
+                    metadatas=[{
+                        "type": "chat_history",
+                        "sender": sender,
+                        "timestamp": timestamp,
+                        "path": "memory_stream" # Virtual path
+                    }]
+                )
+                logging.info(f"💾 Memorized chat from {sender}")
+                
+        except Exception as e:
+            logging.error(f"Chat indexing failed: {e}")
+
+    def index_text(self, text: str, metadata: Dict = None):
+        """Indexes a raw string directly."""
+        if not self.llm: return
+
+        try:
+            # Chunking 
+            chunk_size = 1000
+            chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+            
+            ids = []
+            embeddings = []
+            final_embeddings = [] # Fixed variable name
+            metadatas = []
+            documents = []
+            
+            import datetime
+            timestamp = datetime.datetime.now().isoformat()
+            
+            for idx, chunk in enumerate(chunks):
+                vector = self.llm.embed_content(chunk)
+                if vector:
+                    chunk_id = f"text_{timestamp}_{idx}"
+                    ids.append(chunk_id)
+                    final_embeddings.append(vector)
+                    documents.append(chunk)
+                    
+                    # Merge default metadata with provided metadata
+                    base_meta = {"path": "virtual_memory", "chunk_index": idx, "timestamp": timestamp}
+                    if metadata:
+                        base_meta.update(metadata)
+                    
+                    metadatas.append(base_meta)
+            
+            if ids:
+                self.collection.upsert(
+                    ids=ids,
+                    embeddings=final_embeddings,
+                    documents=documents,
+                    metadatas=metadatas
+                )
+                logging.info(f"Indexed raw text ({len(ids)} chunks)")
+                
+        except Exception as e:
+            logging.error(f"Text indexing failed: {e}")
+
     def index_file(self, file_path: str, content: str):
         """Indexes a single file."""
         if not self.llm: return
@@ -62,37 +136,41 @@ class CodexVectorStore:
         except Exception as e:
             logging.error(f"Indexing failed for {file_path}: {e}")
 
-    def semantic_search(self, query: str, n_results=5) -> List[Dict]:
-        """Searches for relevant files."""
+    def semantic_search(self, query: str, n_results=10) -> List[Dict]:
+        """Searches for relevant files (Optimized V2 using Smart Retrieval)."""
         if not self.llm: return []
         
         try:
             vector = self.llm.embed_content(query)
             if not vector: return []
             
+            # Fetch more candidates to filter later
             results = self.collection.query(
                 query_embeddings=[vector],
-                n_results=n_results
+                n_results=20  # High Recall Strategy
             )
             
-            # Format results
             hits = []
             seen_paths = set()
             
             if results['ids']:
                 for i, doc in enumerate(results['documents'][0]):
+                    score = results['distances'][0][i] if results['distances'] else 0
                     meta = results['metadatas'][0][i]
                     path = meta['path']
                     
+                    # Deduplication logic
                     if path not in seen_paths:
                         hits.append({
                             "path": path,
-                            "snippet": doc[:200] + "...",
-                            "score": results['distances'][0][i] if results['distances'] else 0
+                            # Expanded context window for better AI comprehension
+                            "snippet": doc[:500] + "...", 
+                            "score": score
                         })
                         seen_paths.add(path)
             
-            return hits
+            # Return top N requested
+            return hits[:n_results]
             
         except Exception as e:
             logging.error(f"Search failed: {e}")

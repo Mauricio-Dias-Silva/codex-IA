@@ -44,19 +44,42 @@
             </div>
         </div>
 
-        <!-- Input Area -->
-        <div class="p-3 border-top" style="border-color: var(--border-color) !important;">
-            <div class="d-flex justify-content-end mb-2">
-                <button id="btn-export-pdf" class="btn btn-sm btn-outline-secondary" onclick="exportToPDF()">
-                    <i class="bi bi-file-earmark-pdf me-1"></i>Salvar Conversa (PDF)
-                </button>
-            </div>
-            <form id="chat-form" class="d-flex gap-2">
-                <input type="text" id="chat-input" class="form-control form-control-dark flex-grow-1"
-                    placeholder="Digite sua mensagem..." autocomplete="off">
-                <button type="submit" class="btn btn-glow">
-                    <i class="bi bi-send"></i>
-                </button>
+        <!-- Input Area (SAAS STYLE) -->
+        <div class="p-4" style="border-top: 1px solid var(--border-color); background: var(--bg-card);">
+            <form id="chat-form" class="position-relative">
+                <div class="input-group">
+                    <button type="button" class="btn btn-outline-secondary border-end-0"
+                        style="border-radius: 12px 0 0 12px; border-color: var(--border-color); background: var(--bg-primary);">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    <input type="text" id="chat-input"
+                        class="form-control form-control-dark border-start-0 border-end-0 shadow-none py-3"
+                        placeholder="Digite sua mensagem ou descreva uma imagem para gerar..."
+                        style="border-radius: 0; background: var(--bg-primary); border-color: var(--border-color);"
+                        autocomplete="off">
+                    <button type="submit" class="btn btn-glow border-start-0" style="border-radius: 0 12px 12px 0;">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+
+                <div class="d-flex justify-content-between mt-2 px-1">
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btn-generate-image"
+                            class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="toggleImageMode()">
+                            <i class="bi bi-palette me-1"></i> Criar Imagem
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 disabled"
+                            style="opacity: 0.5;">
+                            <i class="bi bi-mic me-1"></i> Voz (Em breve)
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" id="btn-export-pdf"
+                            class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="exportToPDF()">
+                            <i class="bi bi-download me-1"></i> PDF
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
@@ -96,6 +119,61 @@
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(element).save();
+    }
+
+    let imageMode = false;
+    function toggleImageMode() {
+        imageMode = !imageMode;
+        const btn = document.getElementById('btn-generate-image');
+        const input = document.getElementById('chat-input');
+
+        if (imageMode) {
+            btn.classList.add('active');
+            btn.style.backgroundColor = '#ffc107';
+            btn.style.color = '#000';
+            input.placeholder = '🎨 Descreva a imagem que quer criar...';
+        } else {
+            btn.classList.remove('active');
+            btn.style.backgroundColor = '';
+            btn.style.color = '';
+            input.placeholder = 'Digite sua mensagem...';
+        }
+    }
+
+    async function generateImage(prompt) {
+        addMessage(prompt, true);
+        const loading = document.createElement('div');
+        loading.className = 'message ai';
+        loading.innerHTML = '<p class="mb-0">🎨 Gerando imagem...</p>';
+        chatMessages.appendChild(loading);
+
+        try {
+            const response = await fetch('{% url "core:api_generate_image" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+
+            const data = await response.json();
+            loading.remove();
+
+            if (data.status === 'success') {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message ai';
+                messageDiv.innerHTML = `
+                    <strong>🎨 Imagem Gerada</strong>
+                    <p class="mb-1 mt-2 small text-muted">Fonte: ${data.provider}</p>
+                    <img src="${data.image_url}" class="img-fluid rounded mt-2" style="max-width: 512px;" alt="Imagem gerada">
+                `;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } else {
+                addMessage('❌ Erro: ' + data.error, false);
+            }
+        } catch (error) {
+            loading.remove();
+            addMessage('❌ Erro ao gerar imagem: ' + error, false);
+        }
     }
 
     function addMessage(content, isUser = false) {
@@ -170,8 +248,17 @@
         const message = chatInput.value.trim();
         if (!message) return;
 
-        addMessage(message, true);
         chatInput.value = '';
+
+        // Se está em modo imagem, gerar imagem
+        if (imageMode) {
+            generateImage(message);
+            imageMode = false;
+            toggleImageMode(); // Desliga o modo
+            return;
+        }
+
+        addMessage(message, true);
         addLoadingMessage();
 
         const apiUrl = currentMode === 'parallel' ?

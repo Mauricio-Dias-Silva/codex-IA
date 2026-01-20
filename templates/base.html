@@ -294,39 +294,31 @@
                 <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
                     href="{% url 'core:dashboard' %}">
                     <i class="bi bi-grid-1x2"></i>
-                    <span>Dashboard</span>
+                    <span>Painel Principal</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if active_page == 'chat' %}active{% endif %}" href="{% url 'core:chat' %}">
                     <i class="bi bi-chat-dots"></i>
-                    <span>Chat com IA</span>
+                    <span>Novo Chat</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {% if active_page == 'missions' %}active{% endif %}"
-                    href="{% url 'core:missions' %}">
-                    <i class="bi bi-rocket-takeoff"></i>
-                    <span>Missões</span>
-                </a>
+            <li class="nav-item mt-3 mb-2 px-3 text-secondary text-uppercase" style="font-size: 10px; opacity: 0.6;">
+                <span>Histórico</span>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if active_page == 'night_shift' %}active{% endif %}"
-                    href="{% url 'core:night_shift' %}">
-                    <i class="bi bi-moon-stars"></i>
-                    <span>Night Shift</span>
+                <a class="nav-link" href="#" style="opacity: 0.5; pointer-events: none;">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Conversas Recentes</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {% if active_page == 'hunter' %}active{% endif %}" href="{% url 'core:hunter' %}">
-                    <i class="bi bi-bullseye"></i>
-                    <span>The Hunter</span>
-                </a>
+            <li class="nav-item mt-3 mb-2 px-3 text-secondary text-uppercase" style="font-size: 10px; opacity: 0.6;">
+                <span>Configurações</span>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if active_page == 'council' %}active{% endif %}" href="{% url 'core:council' %}">
-                    <i class="bi bi-people"></i>
-                    <span>The Council</span>
+                <a class="nav-link" href="#" style="opacity: 0.5; pointer-events: none;">
+                    <i class="bi bi-gear"></i>
+                    <span>Preferências</span>
                 </a>
             </li>
         </ul>
