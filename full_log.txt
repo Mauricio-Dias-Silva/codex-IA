@@ -1,0 +1,200 @@
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = get_response(request)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = wrapped_callback(request, *callback_args, **callback_kwargs)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return view_func(request, *args, **kwargs)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/views/decorators/http.py", line 64, in inner
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return func(request, *args, **kwargs)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/core/views.py", line 88, in api_chat
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = agent.chat(message)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/codex_ia/core/agent.py", line 39, in chat
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/codex_ia/core/brain_router.py", line 244, in send_message
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return brain.send_message(message, web_search=web_search, image_path=image_path)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/codex_ia/core/llm_client.py", line 81, in send_message
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self.chat_session.send_message(contents)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/chats.py", line 254, in send_message
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._modules.generate_content(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/models.py", line 5203, in generate_content
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._generate_content(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/models.py", line 3985, in _generate_content
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._api_client.request(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/_api_client.py", line 1388, in request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._request(http_request, http_options, stream=False)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/_api_client.py", line 1224, in _request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 477, in __call__
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     do = self.iter(retry_state=retry_state)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 378, in iter
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     result = action(retry_state)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 400, in <lambda>
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     self._add_action_func(lambda rs: rs.outcome.result())
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return self.__get_result()
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     raise self._exception
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 480, in __call__
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     result = fn(*args, **kwargs)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/_api_client.py", line 1194, in _request_once
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._httpx_client.request(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 825, in request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 914, in send
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._send_handling_auth(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._send_handling_redirects(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = self._send_single_request(request)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 1014, in _send_single_request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = transport.handle_request(request)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_transports/default.py", line 250, in handle_request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     resp = self._pool.handle_request(req)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     raise exc from None
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     response = connection.handle_request(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return self._connection.handle_request(request)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     raise exc
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     ) = self._receive_response_headers(**kwargs)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     event = self._receive_event(timeout=timeout)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     data = self._network_stream.read(
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_backends/sync.py", line 128, in read
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return self._sock.recv(max_bytes)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/usr/lib/python3.10/ssl.py", line 1288, in recv
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return self.read(buflen)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/usr/lib/python3.10/ssl.py", line 1161, in read
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     return self._sslobj.read(len)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/gunicorn/workers/base.py", line 204, in handle_abort
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]:     sys.exit(1)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]: SystemExit: 1
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183206]: [2026-01-19 15:52:57 -0300] [183206] [INFO] Worker exiting (pid: 183206)
+Jan 19 18:52:57 instance-20251112-122307 gunicorn[183646]: [2026-01-19 18:52:57 +0000] [183646] [INFO] Booting worker with pid: 183646
+Jan 19 18:53:59 instance-20251112-122307 gunicorn[183205]: 2026-01-19 15:53:59,875 - INFO - [NETWORK] Connected to Exocortex at /home/Mauricio/.codex_network_memory.json
+Jan 19 18:53:59 instance-20251112-122307 gunicorn[183205]: 2026-01-19 15:53:59,876 - INFO - AFC is enabled with max remote calls: 10.
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183202]: [2026-01-19 18:54:04 +0000] [183202] [CRITICAL] WORKER TIMEOUT (pid:183205)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]: [2026-01-19 15:54:04 -0300] [183205] [ERROR] Error handling request /api/mission/
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]: Traceback (most recent call last):
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/gunicorn/workers/sync.py", line 134, in handle
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     self.handle_request(listener, req, client, addr)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/gunicorn/workers/sync.py", line 177, in handle_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     respiter = self.wsgi(environ, resp.start_response)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/wsgi.py", line 124, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 140, in get_response
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._middleware_chain(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/utils/deprecation.py", line 120, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = response or self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/whitenoise/middleware.py", line 123, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/utils/deprecation.py", line 120, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = response or self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/utils/deprecation.py", line 120, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = response or self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/utils/deprecation.py", line 120, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = response or self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/utils/deprecation.py", line 120, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = response or self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/utils/deprecation.py", line 120, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = response or self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/utils/deprecation.py", line 120, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = response or self.get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = get_response(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = wrapped_callback(request, *callback_args, **callback_kwargs)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return view_func(request, *args, **kwargs)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/django/views/decorators/http.py", line 64, in inner
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return func(request, *args, **kwargs)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/core/views.py", line 115, in api_mission
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     result = squad.assign_mission(mission, apply=True, autopilot=True)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/codex_ia/core/squad.py", line 151, in assign_mission
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     plan = self.client.send_message(plan_prompt)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/codex_ia/core/llm_client.py", line 81, in send_message
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self.chat_session.send_message(contents)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/chats.py", line 254, in send_message
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._modules.generate_content(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/models.py", line 5203, in generate_content
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._generate_content(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/models.py", line 3985, in _generate_content
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._api_client.request(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/_api_client.py", line 1388, in request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._request(http_request, http_options, stream=False)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/_api_client.py", line 1224, in _request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 477, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     do = self.iter(retry_state=retry_state)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 378, in iter
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     result = action(retry_state)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 400, in <lambda>
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     self._add_action_func(lambda rs: rs.outcome.result())
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self.__get_result()
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     raise self._exception
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/tenacity/__init__.py", line 480, in __call__
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     result = fn(*args, **kwargs)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/google/genai/_api_client.py", line 1194, in _request_once
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._httpx_client.request(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 825, in request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 914, in send
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._send_handling_auth(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._send_handling_redirects(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = self._send_single_request(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_client.py", line 1014, in _send_single_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = transport.handle_request(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpx/_transports/default.py", line 250, in handle_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     resp = self._pool.handle_request(req)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     raise exc from None
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     response = connection.handle_request(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self._connection.handle_request(request)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     raise exc
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     ) = self._receive_response_headers(**kwargs)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     event = self._receive_event(timeout=timeout)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     data = self._network_stream.read(
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/httpcore/_backends/sync.py", line 128, in read
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self._sock.recv(max_bytes)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/usr/lib/python3.10/ssl.py", line 1288, in recv
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self.read(buflen)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/usr/lib/python3.10/ssl.py", line 1161, in read
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     return self._sslobj.read(len)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:   File "/opt/codex-ia/venv/lib/python3.10/site-packages/gunicorn/workers/base.py", line 204, in handle_abort
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]:     sys.exit(1)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]: SystemExit: 1
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183205]: [2026-01-19 15:54:04 -0300] [183205] [INFO] Worker exiting (pid: 183205)
+Jan 19 18:54:04 instance-20251112-122307 gunicorn[183649]: [2026-01-19 18:54:04 +0000] [183649] [INFO] Booting worker with pid: 183649
+Jan 19 18:55:54 instance-20251112-122307 gunicorn[183649]: Not Found: /ws
+Jan 19 18:57:27 instance-20251112-122307 gunicorn[183649]: Internal Server Error: /api/chat/
+Jan 19 19:04:27 instance-20251112-122307 gunicorn[183646]: Not Found: /ws
+Jan 19 19:21:32 instance-20251112-122307 gunicorn[183646]: Not Found: /ws

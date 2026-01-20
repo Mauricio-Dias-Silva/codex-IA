@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-bullseye me-2"></i>The Hunter</h2>
+        <p class="text-secondary mb-0">Caçador de tendências e oportunidades de negócio</p>
+    </div>
+</div>
+
+<div class="card-dark mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Radar de Oportunidades</h5>
+        <button id="scan-btn" class="btn btn-glow">
+            <i class="bi bi-radar me-2"></i>Escanear Oportunidades
+        </button>
+    </div>
+    <div class="card-body">
+        <div id="opportunities-list" class="row g-3">
+            <div class="col-12 text-center text-secondary py-4">
+                Clique em "Escanear" para descobrir oportunidades de negócio
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const scanBtn = document.getElementById('scan-btn');
+    const opportunitiesList = document.getElementById('opportunities-list');
+
+    scanBtn.addEventListener('click', async () => {
+        scanBtn.disabled = true;
+        scanBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Escaneando...';
+        opportunitiesList.innerHTML = '<div class="col-12 text-center py-4"><span class="loading-dots">🔍 Analisando mercado</span></div>';
+
+        try {
+            const response = await fetch('{% url "core:api_hunter" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (data.opportunities && data.opportunities.length > 0) {
+                opportunitiesList.innerHTML = data.opportunities.map(opp => `
+                <div class="col-md-6">
+                    <div class="p-4 rounded" style="background: var(--bg-primary); border-left: 3px solid var(--accent-green);">
+                        <h5 class="text-success mb-2">${opp.title}</h5>
+                        <p class="text-secondary mb-2">${opp.description}</p>
+                        <div class="d-flex gap-3">
+                            <span class="text-info"><i class="bi bi-currency-dollar me-1"></i>${opp.revenue}</span>
+                            <span class="text-warning"><i class="bi bi-fire me-1"></i>${opp.confidence}% confiança</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            } else {
+                opportunitiesList.innerHTML = '<div class="col-12 text-center text-secondary py-4">Nenhuma oportunidade encontrada</div>';
+            }
+        } catch (error) {
+            opportunitiesList.innerHTML = `<div class="col-12 text-center text-danger py-4">❌ Erro: ${error.message}</div>`;
+        }
+
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = '<i class="bi bi-radar me-2"></i>Escanear Oportunidades';
+    });
+</script>
+{% endblock %}

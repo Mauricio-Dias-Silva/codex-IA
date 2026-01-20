@@ -1,0 +1,26 @@
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 41, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 225, in build_ui
+    alignment=ft.alignment.center
+              ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'flet.controls.alignment' has no attribute 'center'
+
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 41, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 178, in build_ui
+    self.editor_view = self.build_editor_view()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 336, in build_editor_view
+    ft.Row([self.current_file_label, ft.IconButton(content=ft.Icon("save"), on_click=save_file)]),
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: IconButton.__init__() got an unexpected keyword argument 'content'
+
+Error during imports: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 17, in <module>
+    from fpdf import FPDF
+ModuleNotFoundError: No module named 'fpdf'
+
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'

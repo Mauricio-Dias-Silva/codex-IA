@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-people me-2"></i>The Council</h2>
+        <p class="text-secondary mb-0">Convoque o conselho de IAs para debater um tópico</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card-dark h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Convocar Conselho</h5>
+            </div>
+            <div class="card-body">
+                <form id="council-form">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">Tópico para Debate</label>
+                        <textarea id="topic-input" class="form-control form-control-dark" rows="4"
+                            placeholder="Ex: Qual a melhor arquitetura para um sistema de e-commerce escalável?"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-glow w-100">
+                        <i class="bi bi-gavel me-2"></i>Convocar Conselho
+                    </button>
+                </form>
+
+                <div class="mt-4 pt-4 border-top" style="border-color: var(--border-color) !important;">
+                    <h6 class="text-secondary mb-3">Membros do Conselho</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-info">🏗️ Arquiteto</span>
+                        <span class="badge bg-success">💻 Developer</span>
+                        <span class="badge bg-warning">🔒 Security</span>
+                        <span class="badge bg-danger">⚡ Performance</span>
+                        <span class="badge bg-primary">🎨 UX Expert</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card-dark h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Resultado da Deliberação</h5>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                <div id="council-result" class="p-3 rounded" style="background: var(--bg-primary);">
+                    <p class="text-center text-secondary">Convoque o conselho para ver a deliberação</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const councilForm = document.getElementById('council-form');
+    const topicInput = document.getElementById('topic-input');
+    const councilResult = document.getElementById('council-result');
+
+    councilForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const topic = topicInput.value.trim();
+        if (!topic) return;
+
+        councilResult.innerHTML = '<p class="text-center"><span class="loading-dots">🗣️ O Conselho está deliberando</span></p>';
+
+        try {
+            const response = await fetch('{% url "core:api_council" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic })
+            });
+
+            const data = await response.json();
+
+            if (data.result) {
+                councilResult.innerHTML = marked.parse(data.result);
+            } else if (data.error) {
+                councilResult.innerHTML = `<p class="text-danger">❌ Erro: ${data.error}</p>`;
+            }
+        } catch (error) {
+            councilResult.innerHTML = `<p class="text-danger">❌ Erro de conexão: ${error.message}</p>`;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+venv/
+*.pyc
+__pycache__/
+db.sqlite3
+.git/
+.env
+*.log
+.codex_memory/
+build/
+dist/
+codex-desktop-v2/node_modules/
+*.egg-info/

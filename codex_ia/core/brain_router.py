@@ -171,6 +171,160 @@ class DeepSeekClient:
         except Exception as e:
             return f"DeepSeek Client Error: {e}"
 
+class MistralClient:
+    def __init__(self):
+        self.api_key = os.getenv("MISTRAL_API_KEY")
+        self.model = "mistral-large-latest"
+        self.base_url = "https://api.mistral.ai/v1/chat/completions"
+
+    def send_message(self, message, web_search=False, image_path=None):
+        if not self.api_key:
+            return "Error: MISTRAL_API_KEY not found."
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "messages": [{"role": "user", "content": message}],
+            "model": self.model,
+            "temperature": 0.5
+        }
+        
+        try:
+            resp = requests.post(self.base_url, headers=headers, json=data)
+            if resp.status_code == 200:
+                return resp.json()['choices'][0]['message']['content']
+            else:
+                return f"Mistral Error {resp.status_code}: {resp.text}"
+        except Exception as e:
+            return f"Mistral Client Error: {e}"
+
+class ClaudeClient:
+    def __init__(self):
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.model = "claude-3-5-sonnet-20241022"
+        self.base_url = "https://api.anthropic.com/v1/messages"
+
+    def send_message(self, message, web_search=False, image_path=None):
+        if not self.api_key:
+            return "Error: ANTHROPIC_API_KEY not found."
+        
+        headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": message}],
+            "max_tokens": 4096,
+            "temperature": 0.5
+        }
+        
+        try:
+            resp = requests.post(self.base_url, headers=headers, json=data)
+            if resp.status_code == 200:
+                return resp.json()['content'][0]['text']
+            else:
+                return f"Claude Error {resp.status_code}: {resp.text}"
+        except Exception as e:
+            return f"Claude Client Error: {e}"
+
+class CohereClient:
+    def __init__(self):
+        self.api_key = os.getenv("COHERE_API_KEY")
+        self.model = "command-r-plus"
+        self.base_url = "https://api.cohere.ai/v1/chat"
+
+    def send_message(self, message, web_search=False, image_path=None):
+        if not self.api_key:
+            return "Error: COHERE_API_KEY not found."
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "message": message,
+            "model": self.model,
+            "temperature": 0.5
+        }
+        
+        try:
+            resp = requests.post(self.base_url, headers=headers, json=data)
+            if resp.status_code == 200:
+                return resp.json()['text']
+            else:
+                return f"Cohere Error {resp.status_code}: {resp.text}"
+        except Exception as e:
+            return f"Cohere Client Error: {e}"
+
+class HuggingFaceClient:
+    def __init__(self):
+        self.api_key = os.getenv("HUGGINGFACE_API_KEY")
+        self.model = "meta-llama/Meta-Llama-3-70B-Instruct"  # ou outro modelo
+        self.base_url = f"https://api-inference.huggingface.co/models/{self.model}"
+
+    def send_message(self, message, web_search=False, image_path=None):
+        if not self.api_key:
+            return "Error: HUGGINGFACE_API_KEY not found."
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "inputs": message,
+            "parameters": {"temperature": 0.5, "max_new_tokens": 512}
+        }
+        
+        try:
+            resp = requests.post(self.base_url, headers=headers, json=data)
+            if resp.status_code == 200:
+                result = resp.json()
+                if isinstance(result, list) and len(result) > 0:
+                    return result[0].get('generated_text', str(result))
+                return str(result)
+            else:
+                return f"HuggingFace Error {resp.status_code}: {resp.text}"
+        except Exception as e:
+            return f"HuggingFace Client Error: {e}"
+
+class PerplexityClient:
+    def __init__(self):
+        self.api_key = os.getenv("PERPLEXITY_API_KEY")
+        self.model = "llama-3.1-sonar-large-128k-online"
+        self.base_url = "https://api.perplexity.ai/chat/completions"
+
+    def send_message(self, message, web_search=False, image_path=None):
+        if not self.api_key:
+            return "Error: PERPLEXITY_API_KEY not found."
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": message}],
+            "temperature": 0.5
+        }
+        
+        try:
+            resp = requests.post(self.base_url, headers=headers, json=data)
+            if resp.status_code == 200:
+                return resp.json()['choices'][0]['message']['content']
+            else:
+                return f"Perplexity Error {resp.status_code}: {resp.text}"
+        except Exception as e:
+            return f"Perplexity Client Error: {e}"
+
 class BrainRouter:
     """
     The Council's Receptionist.
@@ -179,6 +333,7 @@ class BrainRouter:
     def __init__(self):
         self.neurons = {}
         self.active_brain = "gemini" # Default
+        self.sleeping_brains = {} # {brain_name: wakeup_time_timestamp}
         
         # Initialize Brains
         try:
@@ -197,51 +352,101 @@ class BrainRouter:
 
         if os.getenv("DEEPSEEK_API_KEY"):
             self.neurons["deepseek"] = DeepSeekClient()
+        
+        # NEW: Expanded AI Support
+        if os.getenv("MISTRAL_API_KEY"):
+            self.neurons["mistral"] = MistralClient()
+        
+        if os.getenv("ANTHROPIC_API_KEY"):
+            self.neurons["claude"] = ClaudeClient()
+        
+        if os.getenv("COHERE_API_KEY"):
+            self.neurons["cohere"] = CohereClient()
+        
+        if os.getenv("HUGGINGFACE_API_KEY"):
+            self.neurons["huggingface"] = HuggingFaceClient()
+        
+        if os.getenv("PERPLEXITY_API_KEY"):
+            self.neurons["perplexity"] = PerplexityClient()
             
         self.neurons["ollama"] = OllamaClient()
 
-        # Set default active brain dynamically
-        if "gemini" in self.neurons:
-            self.active_brain = "gemini"
-        elif self.neurons:
-            self.active_brain = list(self.neurons.keys())[0]
-        else:
-            self.active_brain = "none"
-
-    def set_brain(self, brain_name):
-        if brain_name in self.neurons:
-            self.active_brain = brain_name
-            return True
-        return False
+    def get_available_brain(self):
+        """Finds a brain that is awake."""
+        import time
+        now = time.time()
         
-    def get_active_brain(self):
-         return self.neurons.get(self.active_brain)
+        # Check if anyone woke up
+        woke_up = []
+        for name, wakeup_time in self.sleeping_brains.items():
+            if now > wakeup_time:
+                woke_up.append(name)
+        
+        for name in woke_up:
+            del self.sleeping_brains[name]
+            logging.info(f"⏰ {name.upper()} acordou do sono!")
+            
+        # Try active preference first
+        if self.active_brain in self.neurons and self.active_brain not in self.sleeping_brains:
+            return self.active_brain, self.neurons[self.active_brain]
+            
+        # Fallback loop
+        for name, client in self.neurons.items():
+            if name not in self.sleeping_brains:
+                 logging.info(f"🔄 Failover: Usando {name} pois {self.active_brain} não está disponível.")
+                 return name, client
+                 
+        return None, None
 
     def send_message(self, message, web_search=False, image_path=None):
         """
-        Routes the chat to the active brain.
-        Fallback logic could be added here.
+        Routes the chat with Auto-Failover.
         """
-        brain = self.get_active_brain()
-        if not brain:
-            return "Error: No active brain available. Please check API keys."
-            
-        # Capability Checks
-        if image_path and self.active_brain in ["groq", "ollama"]:
-            # Fallback to Gemini for Vision if available
-            if "gemini" in self.neurons:
-                logging.info(f"Switching to Gemini for Vision request (Active: {self.active_brain})")
-                return self.neurons["gemini"].send_message(message, web_search, image_path)
-            else:
-                 return "Error: Active brain does not support Vision."
-
-        if web_search and self.active_brain in ["groq", "ollama"]:
-             # Fallback to Gemini for Web Search
-            if "gemini" in self.neurons:
-                logging.info(f"Switching to Gemini for Web Search request")
-                return self.neurons["gemini"].send_message(message, web_search, image_path)
+        import time
         
-        return brain.send_message(message, web_search=web_search, image_path=image_path)
+        max_retries = len(self.neurons)
+        attempts = 0
+        last_error = ""
+        
+        while attempts < max_retries:
+            brain_name, brain = self.get_available_brain()
+            
+            if not brain:
+                return f"😴 Zzz... Todas as IAs estão 'dormindo' (Rate Limit). Tente novamente em alguns minutos.\n\nStatus do Sono:\n{self.sleeping_brains}"
+                
+            try:
+                # Capability Checks Handling
+                if (web_search or image_path) and brain_name not in ["gemini", "openai"]:
+                     # If primary feature brain is asleep, we might degrade service (no image/search) 
+                     # but still answer text. Let's warn.
+                     if "gemini" in self.sleeping_brains:
+                         message += "\n[SYSTEM NOTE: Image/Search capabilities reduced because Gemini is sleeping.]"
+                
+                response = brain.send_message(message, web_search=web_search, image_path=image_path)
+                
+                # Check for "sleeping" errors (429, Quota) in response string (since clients handle exceptions returning strings)
+                if "429" in str(response) or "Quota" in str(response) or "Rate limit" in str(response):
+                    logging.warning(f"💤 {brain_name} está cansado (Rate Limit). Colocando para dormir por 5 min.")
+                    self.sleeping_brains[brain_name] = time.time() + 300 # Sleep 5 min
+                    attempts += 1
+                    continue
+                
+                # Success signature check
+                if "Error" in str(response) and len(str(response)) < 200:
+                     # Generic error, maybe not sleep, just retry next
+                     logging.warning(f"⚠️ Erro no {brain_name}: {response}")
+                     attempts += 1
+                     last_error = response
+                     continue
+                     
+                return response
+                
+            except Exception as e:
+                logging.error(f"Critical error on {brain_name}: {e}")
+                attempts += 1
+                last_error = str(e)
+        
+        return f"❌ Falha no Conselho. Todas as IAs falharam. Último erro: {last_error}"
 
     def council_meeting(self, message):
         """
@@ -303,3 +508,102 @@ class BrainRouter:
         final_verdict = chair.send_message(synthesis_prompt)
         
         return f"{minutes}\n---\n## ⚖️ FINAL VERDICT:\n{final_verdict}"
+    
+    def parallel_execution(self, message, max_workers=None):
+        """
+        🚀 PARALLEL AI CONSORTIUM
+        Divide uma tarefa entre múltiplas IAs em paralelo.
+        """
+        import time
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        start_time = time.time()
+        
+        # Filtrar IAs disponíveis
+        available_ais = [name for name in self.neurons.keys() 
+                         if name not in self.sleeping_brains and name != 'ollama']
+        
+        if not available_ais:
+            return {
+                'status': 'error',
+                'error': 'Nenhuma IA disponível.',
+                'active_ais': [],
+                'partial_results': {},
+                'synthesis': ''
+            }
+        
+        if max_workers:
+            available_ais = available_ais[:max_workers]
+        
+        logging.info(f"🚀 Parallel with {len(available_ais)} AIs: {available_ais}")
+        
+        partial_results = {}
+        errors = {}
+        
+        def query_ai(ai_name):
+            try:
+                response = self.neurons[ai_name].send_message(message)
+                return (ai_name, response, None)
+            except Exception as e:
+                return (ai_name, None, str(e))
+        
+        # Parallel execution
+        with ThreadPoolExecutor(max_workers=len(available_ais)) as executor:
+            futures = {executor.submit(query_ai, ai): ai for ai in available_ais}
+            
+            for future in as_completed(futures):
+                ai_name, response, error = future.result()
+                if error:
+                    errors[ai_name] = error
+                else:
+                    partial_results[ai_name] = response
+        
+        if not partial_results:
+            return {
+                'status': 'error',
+                'error': 'Todas falharam',
+                'active_ais': available_ais,
+                'partial_results': {},
+                'errors': errors,
+                'synthesis': ''
+            }
+        
+        # Synthesis
+        synthesis_prompt = f'''Você é sintetizador de um consórcio de IAs.
+
+PERGUNTA: "{message}"
+
+RESPOSTAS:
+'''
+        for ai, resp in partial_results.items():
+            synthesis_prompt += f"\n--- {ai.upper()}: {resp}\n"
+        
+        synthesis_prompt += '''
+        
+MISSÃO:
+1. Combine o melhor de cada perspectiva
+2. Crie resposta coerente em português
+3. Destaque consensos e divergências
+4. Seja mais completa que qualquer resposta individual
+
+Retorne APENAS a síntese final.
+'''
+        
+        synthesizer = (self.neurons.get('claude') or 
+                       self.neurons.get('openai') or 
+                       self.neurons.get('gemini') or 
+                       list(self.neurons.values())[0])
+        
+        try:
+            synthesis = synthesizer.send_message(synthesis_prompt)
+        except Exception as e:
+            synthesis = f"Erro: {e}\n\n" + "\n\n".join([f"**{k}**: {v[:200]}..." for k,v in partial_results.items()])
+        
+        return {
+            'status': 'success',
+            'active_ais': list(partial_results.keys()),
+            'partial_results': partial_results,
+            'synthesis': synthesis,
+            'processing_time': round(time.time() - start_time, 2),
+            'errors': errors
+        }

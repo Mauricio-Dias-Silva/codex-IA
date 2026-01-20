@@ -11,7 +11,11 @@ try:
     import sys
     import threading
     import time
+    import threading
+    import time
     from dotenv import load_dotenv
+    from fpdf import FPDF
+    import datetime
     
     # Ensure we can import codex_ia
     sys.path.append(os.getcwd())
@@ -39,6 +43,7 @@ class CodexIDE:
             
             # UI Components
             self.build_ui()
+            self.page.update()
             
             # Init Agent
             self.init_agent(self.current_project_dir)
@@ -61,6 +66,7 @@ class CodexIDE:
     def init_agent(self, path):
         """Initializes or Re-initializes the Agent for a specific path."""
         def worker():
+            time.sleep(2) # Give UI time to render first
             try:
                 self.add_log(f"🔄 Loading Project: {path}...", "blue")
                 load_dotenv(os.path.join(path, ".env")) # Load project specific env
@@ -299,10 +305,12 @@ class CodexIDE:
             min_lines=30,
             text_size=14, 
             text_style=ft.TextStyle(font_family="Consolas"),
+            color="white",
             border_color="transparent",
             bgcolor="#111214",
             expand=True,
-            read_only=False
+            read_only=False,
+            value="Welcome to Codex-IA.\nSelect a file from the explorer to begin."
         )
         self.current_file_label = ft.Text("No file selected", weight="bold")
         
@@ -333,7 +341,7 @@ class CodexIDE:
                 # Col 2: Editor
                 ft.Container(
                     content=ft.Column([
-                        ft.Row([self.current_file_label, ft.IconButton(icon="save", on_click=save_file)]),
+                        ft.Row([self.current_file_label, ft.Container(content=ft.Icon("save"), on_click=save_file, padding=5, tooltip="Save")]),
                         self.code_editor
                     ], spacing=5, expand=True),
                     expand=True,
@@ -348,24 +356,28 @@ class CodexIDE:
     def refresh_file_list(self):
         self.file_tree.controls.clear()
         try:
+            items_found = 0
             for root, dirs, files in os.walk(self.current_project_dir):
                 if ".git" in root or "__pycache__" in root or "venv" in root: continue
-                # Very simple flat list for PoC
                 for f in files:
+                    items_found += 1
                     path = os.path.join(root, f)
                     rel_path = os.path.relpath(path, self.current_project_dir)
                     icons = {".py": "code", ".md": "description", ".json": "data_object"}
                     ext = os.path.splitext(f)[1]
                     
                     self.file_tree.controls.append(
-                        ft.ListTile(
-                            leading=ft.Icon(icons.get(ext, "insert_drive_file"), size=16),
-                            title=ft.Text(rel_path, size=12),
-                            dense=True,
+                        ft.TextButton(
+                            text=f"📄 {rel_path}",
+                            style=ft.ButtonStyle(color="white"),
                             on_click=lambda _, p=path: self.open_file_in_editor(p)
                         )
                     )
-        except: pass
+            if items_found == 0:
+                 self.file_tree.controls.append(ft.Text("No files found in: " + self.current_project_dir, color="red"))
+        except Exception as e:
+             self.file_tree.controls.append(ft.Text(f"Error listing files: {e}", color="red"))
+             print(f"File List Error: {e}")
         self.page.update()
 
     def open_file_in_editor(self, path):
@@ -384,13 +396,81 @@ class CodexIDE:
         
         return ft.Container(
             content=ft.Column([
-                ft.Text("Codex Assistant", size=20, weight="bold"),
+                ft.Row([
+                    ft.Text("Codex Assistant", size=20, weight="bold"),
+                    ft.Container(expand=True),
+                    ft.IconButton(icon="picture_as_pdf", icon_color="red", tooltip="Export Chat to PDF", on_click=self.export_chat_to_pdf)
+                ]),
                 ft.Divider(),
                 self.chat_history,
-                ft.Row([self.chat_input, ft.IconButton(icon="send", on_click=lambda _: self.send_chat())])
+                ft.Row([self.chat_input, ft.Container(content=ft.Icon("send"), on_click=lambda _: self.send_chat(), padding=5, tooltip="Send")])
             ]),
             padding=20, expand=True
         )
+    
+    def export_chat_to_pdf(self, e):
+        if not self.chat_history.controls:
+            self.add_log("⚠️ Nothing to export.", "orange")
+            return
+
+        try:
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            # Use core font that supports some accents (Arial/Helvetica is standard)
+            pdf.set_font("Helvetica", size=12)
+            
+            pdf.set_font("Helvetica", "B", 16)
+            pdf.cell(0, 10, txt="Codex-IA Chat Export", new_x="LMARGIN", new_y="NEXT", align='C')
+            pdf.set_font("Helvetica", "I", 10)
+            pdf.cell(0, 10, txt=f"Generated on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}", new_x="LMARGIN", new_y="NEXT", align='C')
+            pdf.ln(5)
+            
+            for row in self.chat_history.controls:
+                if not isinstance(row, ft.Row): continue
+                
+                sender = "Unknown"
+                text = ""
+                
+                try:
+                    container = row.controls[0]
+                    content_control = container.content
+                    
+                    if row.alignment == ft.MainAxisAlignment.END:
+                        sender = "USER"
+                        if isinstance(content_control, ft.Text):
+                            text = content_control.value
+                    else:
+                        sender = "CODEX-IA"
+                        if isinstance(content_control, ft.Markdown):
+                            text = content_control.value
+                    
+                    if text:
+                        # Normalize text to Latin-1 range to avoid crashes with standard fonts
+                        # Replace unsupported chars with ?
+                        text = text.encode('latin-1', 'replace').decode('latin-1')
+                        
+                        if sender == "USER":
+                            pdf.set_text_color(0, 0, 255) # Blue
+                            pdf.set_font("Helvetica", "B", 11)
+                            pdf.multi_cell(0, 7, f"You: {text}", new_x="LMARGIN", new_y="NEXT", align='R')
+                        else:
+                            pdf.set_text_color(0, 0, 0) # Black
+                            pdf.set_font("Helvetica", "", 11)
+                            pdf.multi_cell(0, 7, f"Codex: {text}", new_x="LMARGIN", new_y="NEXT", align='L')
+                        
+                        pdf.ln(2)
+                except Exception as ex:
+                   print(f"Row parse error: {ex}")
+
+            filename = f"chat_export_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            pdf.output(filename)
+            self.add_log(f"✅ Chat exported to {filename}", "green")
+            os.startfile(filename) 
+            
+        except Exception as ex:
+            self.add_log(f"❌ Export failed: {ex}", "red")
+            print(traceback.format_exc())
 
     def send_chat(self):
         msg = self.chat_input.value
@@ -832,4 +912,14 @@ def main(page: ft.Page):
     CodexIDE(page)
 
 if __name__ == "__main__":
-    ft.app(main)
+    import os
+    port = int(os.environ.get("PORT", 8551))
+    host = os.environ.get("HOST", "0.0.0.0")
+    
+    # Run as web server (no desktop window)
+    ft.app(
+        target=main,
+        view=None,  # No window - pure web server
+        port=port,
+        host=host
+    )

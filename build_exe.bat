@@ -10,7 +10,7 @@ pip install pyinstaller
 
 echo [2/4] Installing Dependencies (Critical for Flet)...
 :: Ensure Flet and project libaries are installed
-pip install "flet[all]" google-genai rich python-dotenv
+pip install "flet[all]" google-genai rich python-dotenv fpdf2
 
 echo [3/4] Running Flet Pack...
 :: 'flet pack' wraps PyInstaller and automatically handles Flet's hidden imports and asset bundling.

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-moon-stars me-2"></i>Night Shift</h2>
+        <p class="text-secondary mb-0">Auto-evolução e melhoria contínua</p>
+    </div>
+</div>
+
+<div class="card-dark">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Iniciar Análise</h5>
+        <button id="start-night-shift" class="btn btn-glow">
+            <i class="bi bi-moon-stars me-2"></i>Iniciar Night Shift
+        </button>
+    </div>
+    <div class="card-body">
+        <p class="text-secondary mb-4">
+            O Night Shift analisa o projeto em busca de melhorias, otimizações e refatorações possíveis.
+            É como ter um desenvolvedor sênior revisando seu código enquanto você dorme.
+        </p>
+
+        <div id="night-shift-results" class="p-4 rounded" style="background: var(--bg-primary); min-height: 200px;">
+            <p class="text-center text-secondary">Clique em "Iniciar Night Shift" para começar a análise</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const startBtn = document.getElementById('start-night-shift');
+    const results = document.getElementById('night-shift-results');
+
+    startBtn.addEventListener('click', async () => {
+        startBtn.disabled = true;
+        startBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analisando...';
+        results.innerHTML = '<p class="text-center"><span class="loading-dots">🌙 Analisando projeto</span></p>';
+
+        try {
+            const response = await fetch('{% url "core:api_night_shift" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (data.result) {
+                results.innerHTML = marked.parse(data.result);
+            } else if (data.error) {
+                results.innerHTML = `<p class="text-danger">❌ Erro: ${data.error}</p>`;
+            }
+        } catch (error) {
+            results.innerHTML = `<p class="text-danger">❌ Erro de conexão: ${error.message}</p>`;
+        }
+
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<i class="bi bi-moon-stars me-2"></i>Iniciar Night Shift';
+    });
+</script>
+{% endblock %}
