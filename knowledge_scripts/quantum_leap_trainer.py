@@ -48,7 +48,8 @@ class QuantumLeapTrainer:
                 )
                 self.indexed_count += 1
                 word_count = len(response.text.split())
-                print(f"   ✅ {doc_id[:12]}... | ~{word_count} palavras")
+                doc_preview = str(doc_id[0]) if doc_id and isinstance(doc_id, list) else "indexed"
+                print(f"   ✅ {doc_preview[:12]}... | ~{word_count} palavras")
                 return True
             else:
                 print(f"   ⚠️  Resposta muito curta, pulando")

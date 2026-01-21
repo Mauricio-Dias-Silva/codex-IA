@@ -97,9 +97,11 @@ class CodexVectorStore:
                     metadatas=metadatas
                 )
                 logging.info(f"Indexed raw text ({len(ids)} chunks)")
+                return ids
                 
         except Exception as e:
             logging.error(f"Text indexing failed: {e}")
+            return None
 
     def index_file(self, file_path: str, content: str):
         """Indexes a single file."""
