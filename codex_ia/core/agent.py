@@ -72,6 +72,24 @@ class CodexAgent:
             full_message = f"{system_instruction}\n\nCONTEXT:\n{context}\n\nUSER MESSAGE:\n{message}"
             
             response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path, use_fallback=use_fallback)
+            
+            # 🛡️ LEGAL SHIELD IMPLEMENTATION (ESCUDO JURÍDICO)
+            keywords_sensitive = [
+                'médico', 'tratamento', 'doença', 'remédio', 'cura', 'sintoma', 'diagnóstico',
+                'lei', 'jurídico', 'advogado', 'processo', 'crime', 'pena', 'direito', 'tributário'
+            ]
+            
+            # Simple keyword check (case insensitive)
+            if any(k in message.lower() for k in keywords_sensitive) or any(k in response.lower() for k in keywords_sensitive):
+                disclaimer = (
+                    "\n\n---"
+                    "\n> **⚠️ Nota Legal / Disclaimer:**"
+                    "\n> *Esta resposta foi gerada por Inteligência Artificial para fins de pesquisa e educação.*"
+                    "\n> *As informações aqui contidas NÃO substituem aconselhamento profissional médico, jurídico ou financeiro.*"
+                    "\n> *Sempre consulte um especialista humano qualificado antes de tomar decisões críticas.*"
+                )
+                response += disclaimer
+
             return response
         except Exception as e:
             logging.error(f"Erro durante o chat: {e}")
