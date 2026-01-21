@@ -24,7 +24,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from codex_ia.core.vector_store import CodexVectorStore
 from codex_ia.core.llm_client import GeminiClient
+from codex_ia.core.brain_router import GroqClient
 from google.genai import types
+import groq
 
 # === CONFIGURATION ===
 TARGET_WORDS = 2_000_000
@@ -46,9 +48,12 @@ MACRO_DOMAINS = [
 class InfinityEngine:
     def __init__(self):
         self.store = CodexVectorStore()
-        self.llm = GeminiClient()
-        # FORCE GEMINI FLASH FOR HIGH SPEED & VOLUME
-        self.llm.model = "gemini-2.0-flash-exp" 
+        # MULTI-BRAIN SETUP
+        self.gemini = GeminiClient()
+        self.gemini.model = "gemini-2.0-flash-exp"  # High speed
+        self.groq = GroqClient()  # Backup brain
+        self.active_brain = "gemini"  # Start with Gemini
+        self.gemini_exhausted = False
         self.state = self._load_state()
         
     def _load_state(self):
@@ -64,8 +69,44 @@ class InfinityEngine:
         with open(DB_FILE, 'w') as f:
             json.dump(self.state, f, indent=2)
 
+    def _call_brain(self, prompt, mode="topic", temperature=0.7, max_tokens=6000):
+        """Smart Brain Router with Auto-Failover"""
+        
+        # Try Gemini first (if not exhausted)
+        if not self.gemini_exhausted:
+            try:
+                response = self.gemini.client.models.generate_content(
+                    model=self.gemini.model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=temperature,
+                        max_output_tokens=max_tokens
+                    )
+                )
+                return response.text
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    print("\n🔄 Gemini Quota Exhausted. Switching to GROQ FOREVER...")
+                    self.gemini_exhausted = True
+                    self.active_brain = "groq"
+                else:
+                    print(f"⚠️ Gemini Error: {e}")
+                    return None
+        
+        # Use Groq (if Gemini is exhausted or failed)
+        if self.gemini_exhausted:
+            try:
+                response = self.groq.send_message(prompt)
+                return response
+            except Exception as e:
+                print(f"⚠️ Groq Error: {e}")
+                return None
+                
+        return None
+
     def generate_new_topics(self, macro_domain):
-        """Asks Gemini to invent new specific topics."""
+        """Asks AI to invent new specific topics."""
         prompt = f"""
         Atue como um Curador de Enciclopédia de Nível PhD.
         Estamos construindo uma base de conhecimento sobre: {macro_domain}.
@@ -80,19 +121,16 @@ class InfinityEngine:
         ["Tópico A", "Tópico B", "Tópico C"]
         """
         
-        try:
-            response = self.llm.client.models.generate_content(
-                model=self.llm.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(temperature=0.7) # Higher temp for creativity
-            )
-            text = response.text.strip()
-            # Cleanup Markdown stuff if present
-            text = text.replace("```python", "").replace("```", "").strip()
-            return eval(text) # Dangerous but effective for simple list parsing
-        except Exception as e:
-            print(f"⚠️ Erro gerando tópicos: {e}")
-            return []
+        text = self._call_brain(prompt, mode="topic", temperature=0.7, max_tokens=1000)
+        if text:
+            try:
+                # Cleanup Markdown stuff if present
+                text = text.replace("```python", "").replace("```", "").strip()
+                return eval(text)  # Parse list
+            except Exception as e:
+                print(f"⚠️ Erro parseando tópicos: {e}")
+                return []
+        return []
 
     def generate_content(self, topic):
         """Generates the masterclass content."""
@@ -112,19 +150,7 @@ class InfinityEngine:
         Mínimo: 3000 palavras.
         """
         
-        try:
-            response = self.llm.client.models.generate_content(
-                model=self.llm.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.3, # Lower temp for accuracy
-                    max_output_tokens=6000 # Max possible
-                )
-            )
-            return response.text
-        except Exception as e:
-            print(f"⚠️ Erro gerando conteúdo: {e}")
-            return None
+        return self._call_brain(prompt, mode="content", temperature=0.3, max_tokens=6000)
 
     def run(self):
         print("\n" + "♾️" * 40)
