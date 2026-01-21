@@ -38,3 +38,8 @@ ENV/
 
 # Database
 *.sqlite3
+
+# Arquivos compactados grandes (Knowledge Base)
+*.tar.gz
+chromadb_complete.tar.gz
+quantum_scripts.tar.gz
