@@ -79,13 +79,17 @@ def api_chat(request):
     try:
         data = json.loads(request.body)
         message = data.get('message', '')
+        mode = data.get('mode', 'single')  # 'single' ou 'parallel'
         
         if not message:
             return JsonResponse({'error': 'Message is required'}, status=400)
         
         agent = get_codex_agent()
         if agent:
-            response = agent.chat(message)
+            # Modo Único = sem fallback (apenas Gemini)
+            # Modo Paralelo usa endpoint diferente
+            use_fallback = (mode != 'single')
+            response = agent.chat(message, use_fallback=use_fallback)
             return JsonResponse({'response': response})
         else:
             # Fallback if agent not available

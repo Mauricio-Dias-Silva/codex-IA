@@ -409,12 +409,28 @@ class BrainRouter:
                  
         return None, None
 
-    def send_message(self, message, web_search=False, image_path=None):
+    def send_message(self, message, web_search=False, image_path=None, use_fallback=True):
         """
-        Routes the chat with Auto-Failover.
+        Routes the chat with Auto-Failover (if use_fallback=True).
+        If use_fallback=False, uses only the active_brain without retries.
         """
         import time
         
+        # Modo Único: sem fallback
+        if not use_fallback:
+            brain_name = self.active_brain
+            brain = self.neurons.get(brain_name)
+            
+            if not brain:
+                return f"❌ Erro: IA principal ({brain_name}) não está disponível. Configure a API key."
+            
+            try:
+                response = brain.send_message(message, web_search=web_search, image_path=image_path)
+                return response
+            except Exception as e:
+                return f"❌ Erro ao usar {brain_name}: {str(e)}"
+        
+        # Modo normal: com fallback automático
         max_retries = len(self.neurons)
         attempts = 0
         last_error = ""

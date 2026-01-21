@@ -271,7 +271,10 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message })
+                body: JSON.stringify({
+                    message,
+                    mode: currentMode  // Envia 'single' ou 'parallel'
+                })
             });
 
             const data = await response.json();

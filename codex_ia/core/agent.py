@@ -19,9 +19,11 @@ class CodexAgent:
         self.context_manager = ContextManager(new_dir)
         logging.info(f"Contexto alterado para: {new_dir}")
 
-    def chat(self, message, web_search=False, image_path=None):
+    def chat(self, message, web_search=False, image_path=None, use_fallback=True):
         """
         Interage com o agente Codex.
+        use_fallback=False = Modo Único (apenas Gemini, sem fallback)
+        use_fallback=True = Modo Consórcio (com fallback automático)
         """
         try:
             # We don't always need to inject full context if it's a simple chat, 
@@ -69,7 +71,7 @@ class CodexAgent:
             
             full_message = f"{system_instruction}\n\nCONTEXT:\n{context}\n\nUSER MESSAGE:\n{message}"
             
-            response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path)
+            response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path, use_fallback=use_fallback)
             return response
         except Exception as e:
             logging.error(f"Erro durante o chat: {e}")
