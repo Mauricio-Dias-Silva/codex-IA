@@ -47,6 +47,8 @@ class InfinityEngine:
     def __init__(self):
         self.store = CodexVectorStore()
         self.llm = GeminiClient()
+        # FORCE GEMINI FLASH FOR HIGH SPEED & VOLUME
+        self.llm.model = "gemini-2.0-flash-exp" 
         self.state = self._load_state()
         
     def _load_state(self):
