@@ -19,7 +19,7 @@ MENSAGENS_CRIATIVAS = [
 class GroqClient:
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
-        self.model = "llama3-70b-8192" # Free tier powerhouse
+        self.model = "llama-3.3-70b-versatile" # Free tier powerhouse - modelo atual
         self.base_url = "https://api.groq.com/openai/v1/chat/completions"
 
     def send_message(self, message, web_search=False, image_path=None):

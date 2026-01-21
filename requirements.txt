@@ -12,7 +12,10 @@ tenacity
 websockets
 
 # Optional (for specific features)
-# chromadb  # For vector storage
-# pyttsx3   # For voice (desktop only)
+chromadb>=0.4.0
+playwright>=1.40.0
+pyautogui
+opencv-python
+pytesseract
 
 fpdf2
