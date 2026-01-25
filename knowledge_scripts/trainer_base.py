@@ -12,38 +12,44 @@ class KnowledgeTrainer:
     def __init__(self, domain_name):
         self.domain = domain_name
         self.client = chromadb.PersistentClient(path=".codex_memory")
-        self.collection = self.client.get_or_create_collection(name="project_codebase") # Base unificada
+        
+        # [OPTIMIZATION] Local Embeddings 🚀
+        try:
+            from chromadb.utils import embedding_functions
+            self.emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+        except:
+            self.emb_fn = None
+
+        self.collection = self.client.get_or_create_collection(
+            name="project_codebase_local", 
+            embedding_function=self.emb_fn
+        )
 
     def get_embedding(self, text):
-        try:
-            result = genai.embed_content(
-                model="models/embedding-001",
-                content=text,
-                task_type="retrieval_document",
-                title=f"{self.domain} Knowledge"
-            )
-            return result['embedding']
-        except Exception as e:
-            print(f"⚠️ Erro embedding: {e}. Tentando novamente em 2s...")
-            time.sleep(2)
-            try:
-                # Retry simples
-                result = genai.embed_content(
-                    model="models/embedding-001",
-                    content=text,
-                    task_type="retrieval_document",
-                    title=f"{self.domain} Knowledge"
-                )
-                return result['embedding']
-            except:
-                return None
+        # We don't need this anymore as Chroma handles it locally
+        return None
+
+    def check_exists(self, topic):
+        """Check if topic already exists to save costs."""
+        existing = self.collection.get(
+            where={"topic": topic},
+            limit=1
+        )
+        return len(existing['ids']) > 0
 
     def ingest_topic(self, topic, prompt_context):
         print(f"📚 [{self.domain}] Processando tópico: {topic}...")
         
-        # 1. Gerar Conteúdo
+        # 1. Verificação de Custo (Smart Skip) 🛡️
+        if self.check_exists(topic):
+            print(f"   ⏩ SKIPPING: '{topic}' já está na memória.")
+            return
+
+        # 2. Gerar Conteúdo
         try:
-            model = genai.GenerativeModel('gemini-2.5-pro')
+            # Seleção de modelo inteligente para custo
+            model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+            model = genai.GenerativeModel(model_name)
             final_prompt = f"""
             ATUE COMO: {prompt_context}
             TAREFA: Crie um documento técnico/jurídico/científico completo e detalhado sobre: '{topic}'.
@@ -63,31 +69,27 @@ class KnowledgeTrainer:
             print(f"❌ Erro ao gerar conteúdo: {e}")
             return
 
-        # 2. Vetorizar e Salvar
-        print(f"📐 Vetorizando '{topic}'...")
+        # 3. Vetorizar e Salvar (Localmente)
+        print(f"📐 Indexando '{topic}'...")
         chunk_size = 1500 # Chunks maiores para contextos complexos
         chunks = [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
         
         ids = []
-        embeddings = []
         documents = []
         metadatas = []
         
         virtual_filename = f"KNOWLEDGE_BASE/{self.domain}/{topic.replace(' ', '_')}.md"
         
         for idx, chunk in enumerate(chunks):
-            vector = self.get_embedding(chunk)
-            if vector:
-                ids.append(f"{self.domain}_{topic}_{idx}")
-                embeddings.append(vector)
-                documents.append(chunk)
-                metadatas.append({
-                    "path": virtual_filename, 
-                    "chunk_index": idx,
-                    "domain": self.domain,
-                    "topic": topic
-                })
+            ids.append(f"{self.domain}_{topic}_{idx}")
+            documents.append(chunk)
+            metadatas.append({
+                "path": virtual_filename, 
+                "chunk_index": idx,
+                "domain": self.domain,
+                "topic": topic
+            })
         
         if ids:
-            self.collection.upsert(ids=ids, embeddings=embeddings, documents=documents, metadatas=metadatas)
-            print(f"💾 SALVO! {len(ids)} fragmentos de sabedoria sobre {topic} inseridos na memória.")
+            self.collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+            print(f"💾 SALVO! {len(ids)} fragmentos de sabedoria sobre {topic} inseridos na memória local.")

@@ -19,24 +19,21 @@ class CodexAgent:
         self.context_manager = ContextManager(new_dir)
         logging.info(f"Contexto alterado para: {new_dir}")
 
-    def chat(self, message, web_search=False, image_path=None):
+    def chat(self, message, web_search=False, image_path=None, task_type="general"):
         """
         Interage com o agente Codex.
         """
         try:
-            # We don't always need to inject full context if it's a simple chat, 
-            # but let's keep it if implemented in LLM client (Wait, LLM Client signature is (message, web_search, image_path)).
-            # The previous code passed 'context' to send_message which was wrong based on llm_client definition.
-            # Let's fix this invocation.
-            
-            # Note: The ContextManager logic seems unused in the previous 'send_message' call 
-            # because send_message only took (message, web_search).
-            # We should probably prepend context to the message if needed.
+            system_instruction = (
+                "You are Codex, an advanced AI Coding Assistant built by PythonJet. "
+                "You are specialized in Python, React, and Electron development. "
+                "Do NOT identify as ChatGPT, Claude, or Gemini. You are Codex. "
+            )
             
             context = self.context_manager.get_context()
-            full_message = f"CONTEXT:\n{context}\n\nUSER MESSAGE:\n{message}"
+            full_message = f"{system_instruction}\n\nCONTEXT:\n{context}\n\nUSER MESSAGE:\n{message}"
             
-            response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path)
+            response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path, task_type=task_type)
             return response
         except Exception as e:
             logging.error(f"Erro durante o chat: {e}")

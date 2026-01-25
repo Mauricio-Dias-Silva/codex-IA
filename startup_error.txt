@@ -24,3 +24,118 @@ ModuleNotFoundError: No module named 'fpdf'
 
 CRITICAL: Missing dependency: No module named 'google.generativeai'
 CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 64, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 220, in build_ui
+    self.chat_view = self.build_chat_view()
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 455, in build_chat_view
+    def on_image_picked(e: ft.FilePickerResultEvent):
+                           ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'flet' has no attribute 'FilePickerResultEvent'
+
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 64, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 220, in build_ui
+    self.chat_view = self.build_chat_view()
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 472, in build_chat_view
+    self.file_picker = ft.FilePicker(on_result=on_image_picked)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: FilePicker.__init__() got an unexpected keyword argument 'on_result'
+
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 64, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 220, in build_ui
+    self.chat_view = self.build_chat_view()
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 472, in build_chat_view
+    self.file_picker = ft.FilePicker(on_result=on_image_picked)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: FilePicker.__init__() got an unexpected keyword argument 'on_result'
+
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 64, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 220, in build_ui
+    self.chat_view = self.build_chat_view()
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 472, in build_chat_view
+    self.file_picker = ft.FilePicker(on_result=on_image_picked)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: FilePicker.__init__() got an unexpected keyword argument 'on_result'
+
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 64, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 220, in build_ui
+    self.chat_view = self.build_chat_view()
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 524, in build_chat_view
+    ft.ElevatedButton("Clear Alerts", on_click=lambda _: (self.sentinel_alerts.controls.clear(), self.page.update()), size=ft.ButtonStyle(text_size=10))
+                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: ButtonStyle.__init__() got an unexpected keyword argument 'text_size'
+
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+CRITICAL: Missing dependency: No module named 'google.generativeai'
+Error during imports: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 9, in <module>
+    import flet as ft
+ModuleNotFoundError: No module named 'flet'
+
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 59, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 199, in build_ui
+    ft.NavigationRailDestination(icon=ft.icons.CODE, label="Editor"),
+                                      ^^^^^^^^^^^^^
+AttributeError: module 'flet.controls.material.icons' has no attribute 'CODE'
+
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 59, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 282, in build_ui
+    self.nav_change(None)
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 301, in nav_change
+    idx = e.control.selected_index
+          ^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'control'
+
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 59, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 282, in build_ui
+    self.nav_change(None)
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 301, in nav_change
+    idx = e.control.selected_index
+          ^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'control'
+
+Error in CodexIDE.__init__: Traceback (most recent call last):
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 59, in __init__
+    self.build_ui()
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 211, in build_ui
+    self.editor_view = self.build_editor_view()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\codex_gui.py", line 384, in build_editor_view
+    ft.ElevatedButton(text="Refresh", on_click=lambda _: self.refresh_file_list(), height=30),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mauricio\Desktop\codex-IA\venv\Lib\site-packages\flet\utils\deprecated.py", line 60, in new_init
+    orig_init(self, *args, **kwargs)
+TypeError: Button.__init__() got an unexpected keyword argument 'text'
+

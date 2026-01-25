@@ -2,6 +2,12 @@ import sys
 import json
 import os
 import logging
+from dotenv import load_dotenv
+
+# Load env from codex-IA root
+# backend is in codex-desktop-v2/backend, root .env is at ../../.env
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
+load_dotenv(dotenv_path)
 
 # In production/packaged mode, codex_ia is local
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -10,6 +16,8 @@ from codex_ia.core.agent import CodexAgent
 from codex_ia.core.network_agent import NetworkAgent
 from codex_ia.core.immunity_agent import ImmunityAgent
 from codex_ia.core.ascension_agent import AscensionAgent
+
+import time
 
 def main():
     print("Codex-IA Backend Started via Electron...")
@@ -83,13 +91,15 @@ def main():
                 agent = project_state["agent"]
                 try:
                     msg_text = data.get('message', '')
-                    image_data = data.get('image') # Base64 string
+                    image_data = data.get('image') # Base64 string or path
+                    task_type = data.get('task_type', 'general') # Let frontend decide
                     
                     if agent: 
-                        # REAL AI CALL
-                        response_text = agent.chat(msg_text, image_path=image_data)
+                        # REAL AI CALL with Smart Routing
+                        # We pass task_type to leverage the new DeepSeek logic in BrainRouter
+                        response_text = agent.chat(msg_text, image_path=image_data, task_type=task_type)
                     else:
-                        response_text = "Backend Agent not connected. Please open a project first to initialize the Brain."
+                        response_text = "Backend Agent not connected. Please open a project first."
                     
                     response = {"type": "chat_response", "text": response_text}
                 except Exception as e:
@@ -241,10 +251,8 @@ def main():
                 except Exception as e:
                     response = {"type": "error", "message": f"Night Shift failed: {e}"}
 
-            elif command == 'trigger_ascension':
-                project_path = data.get('path')
                 try:
-                    from codex_ia.core.ascension_agent import AscensionAgent
+                    # AscensionAgent is already imported globally
                     # If AscensionAgent doesn't exist yet (mock), we simulate it
                     # But the plan said "recursive self-improvement".
                     
@@ -346,9 +354,21 @@ def main():
                 full_path = os.path.join(project_path, file_path)
                 
                 try:
-                    with open(full_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    response = {"type": "file_content", "file": file_path, "content": content}
+                    # Check if binary (simple extension check for now)
+                    binary_exts = ['.sqlite3', '.pyc', '.exe', '.dll', '.so', '.png', '.jpg', '.jpeg', '.gif', '.zip', '.pdf']
+                    if any(file_path.lower().endswith(ext) for ext in binary_exts):
+                        response = {"type": "error", "message": f"Cannot read binary file as text: {file_path}"}
+                    else:
+                        content = ""
+                        try:
+                            with open(full_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                        except UnicodeDecodeError:
+                            # Fallback to latin-1 if utf-8 fails
+                            with open(full_path, 'r', encoding='latin-1') as f:
+                                content = f.read()
+                        
+                        response = {"type": "file_content", "file": file_path, "content": content}
                 except Exception as e:
                     response = {"type": "error", "message": f"Failed to read file: {e}"}
             elif command == 'save_file':

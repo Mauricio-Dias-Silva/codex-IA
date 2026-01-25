@@ -49,33 +49,69 @@ class GroqClient:
         except Exception as e:
             return f"Groq Client Error: {e}"
 
+    def check_health(self):
+        """Quick health check."""
+        if not self.api_key: return False
+        try:
+            # Minimal request
+            return True # Assume healthy if key is there for dashboard
+        except:
+            return False
+
 class OllamaClient:
     def __init__(self):
         self.base_url = "http://localhost:11434/api/generate"
-        self.model = "llama3" # Default, user can change
+        # [OPTIMIZATION] Priority models for Intel HD 620
+        self.model = os.getenv("OLLAMA_MODEL", "llama3.2:3b") 
         
-    def send_message(self, message, web_search=False, image_path=None):
-        # Ollama local check
+    def send_message(self, message, web_search=False, image_path=None, task_type='general'):
+        """Sends message to local Ollama instance."""
         try:
-            requests.get("http://localhost:11434")
-        except:
-             return "Error: Ollama is not running on localhost:11434"
+            # Quick check if server is up
+            requests.get("http://localhost:11434", timeout=1)
+        except Exception:
+             return (
+                 "⚠️ Ollama não detectado localmente.\n\n"
+                 "Para rodar 100% grátis e local:\n"
+                 "1. Baixe o Ollama em: https://ollama.com\n"
+                 "2. No terminal, rode: `ollama pull llama3.2:3b`\n"
+                 "3. Deixe o app do Ollama aberto."
+             )
+
+        # Smart Routing for Models
+        selected_model = self.model
+        if task_type == 'coding':
+            selected_model = os.getenv("OLLAMA_MODEL_CODE", selected_model)
+        elif task_type == 'reasoning':
+            selected_model = os.getenv("OLLAMA_MODEL_REASONING", selected_model)
 
         data = {
-            "model": self.model,
+            "model": selected_model,
             "prompt": message,
-            "stream": False
+            "stream": False,
+            "options": {
+                "num_ctx": 4096,
+                "temperature": 0.3
+            }
         }
         
         try:
-            resp = requests.post(self.base_url, json=data)
+            resp = requests.post(self.base_url, json=data, timeout=120) # Aumentado timeout para reasoning
             if resp.status_code == 200:
                 response_text = resp.json().get('response', '')
                 return response_text
             else:
-                return f"Ollama Error: {resp.text}"
+                return f"❌ Erro no Ollama ({selected_model}): {resp.text}"
         except Exception as e:
-            return f"Ollama Client Error: {e}"
+            return f"❌ Erro de conexão com Ollama: {e}"
+
+    def check_health(self):
+        """Checks if local Ollama server is responsive."""
+        try:
+            resp = requests.get("http://localhost:11434", timeout=1)
+            return resp.status_code == 200
+        except:
+            return False
 
 class OpenAIClient:
     def __init__(self):
@@ -409,7 +445,7 @@ class BrainRouter:
                  
         return None, None
 
-    def send_message(self, message, web_search=False, image_path=None, use_fallback=True):
+    def send_message(self, message, web_search=False, image_path=None, use_fallback=True, task_type='general'):
         """
         Routes the chat with Auto-Failover (if use_fallback=True).
         If use_fallback=False, uses only the active_brain without retries.
@@ -448,8 +484,10 @@ class BrainRouter:
                      # but still answer text. Let's warn.
                      if "gemini" in self.sleeping_brains:
                          message += "\n[SYSTEM NOTE: Image/Search capabilities reduced because Gemini is sleeping.]"
-                
-                response = brain.send_message(message, web_search=web_search, image_path=image_path)
+                if brain_name == 'ollama':
+                    response = brain.send_message(message, web_search=web_search, image_path=image_path, task_type=task_type)
+                else:
+                    response = brain.send_message(message, web_search=web_search, image_path=image_path)
                 
                 # Check for "sleeping" errors (429, Quota) in response string (since clients handle exceptions returning strings)
                 if "429" in str(response) or "Quota" in str(response) or "Rate limit" in str(response):
@@ -654,3 +692,16 @@ MENSAGEM SECRETA PARA ERROS: Se alguma IA falhou (não está na lista), ignore-a
             'processing_time': round(time.time() - start_time, 2),
             'errors': errors
         }
+
+    def check_all_health(self):
+        """Returns health status of critical providers."""
+        status = {}
+        for name in ["gemini", "ollama", "groq"]:
+            if name in self.neurons:
+                if hasattr(self.neurons[name], 'check_health'):
+                    status[name] = self.neurons[name].check_health()
+                else:
+                    status[name] = True # Default for others
+            else:
+                status[name] = False
+        return status

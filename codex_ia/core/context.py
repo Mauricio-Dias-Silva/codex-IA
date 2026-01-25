@@ -10,6 +10,16 @@ class ContextManager:
         self.ignore_dirs = {'.git', 'venv', '.venv', '__pycache__', '.idea', '.vscode', 'node_modules', 'dist', 'build'}
         self.ignore_exts = {'.pyc', '.png', '.jpg', '.jpeg', '.gif', '.pdf', '.exe', '.dll', '.bin', '.svg', '.ico'}
         self.gitignore_rules = self._load_gitignore()
+        
+        # [OPTIMIZATION] Local Memory Integration 🧠
+        try:
+            from codex_ia.core.vector_store import CodexVectorStore
+            from codex_ia.core.global_store import GlobalVectorStore
+            self.vector_store = CodexVectorStore(persistence_path=str(self.root / ".codex_memory"))
+            self.global_store = GlobalVectorStore()
+        except Exception:
+            self.vector_store = None
+            self.global_store = None
 
     def _load_gitignore(self) -> List[str]:
         """Loads patterns from .gitignore if it exists."""
@@ -188,6 +198,47 @@ class ContextManager:
                     continue
                     
         return "\n".join(buffer)
+
+    def get_semantic_context(self, query: str, n_results: int = 15) -> str:
+        """
+        [PHASE 5] Semantic Context Retrieval.
+        Uses the local vector store to find the most relevant snippets for a query.
+        This drastically reduces token usage and costs.
+        """
+        if not self.vector_store:
+            # If no index, fallback to high-level graph
+            return "Neural Memory not found. Falling back to Architecture Map:\n" + self.build_graph()
+            
+        try:
+            hits = self.vector_store.semantic_search(query, n_results=n_results)
+            
+            if not hits:
+                return "No relevant context found in neural memory. Using Architecture Map:\n" + self.build_graph()
+                
+            context_parts = ["--- SEMANTIC CONTEXT (Neural Retrieval) ---"]
+            context_parts.append(f"Query: {query}\n")
+            
+            for hit in hits:
+                path = hit.get('path', 'unknown')
+                score = hit.get('score', 0)
+                snippet = hit.get('snippet', '')
+                
+                context_parts.append(f"\n[Snippet from: {path}] (Relevance: {1-score:.2f})")
+                context_parts.append(snippet)
+                
+            # [PHASE 6] Add Global Knowledge 🌍
+            if self.global_store:
+                global_hits = self.global_store.search_universal(query, n_results=3)
+                if global_hits:
+                    context_parts.append("\n--- UNIVERSAL KNOWLEDGE (Cross-Project Memory) ---")
+                    for ghit in global_hits:
+                        context_parts.append(f"\n[Source: {ghit['source']} | Topic: {ghit['topic']}]")
+                        context_parts.append(ghit['snippet'])
+
+            return "\n".join(context_parts)
+            
+        except Exception as e:
+            return f"Error during semantic retrieval: {e}"
 
     def get_file_context(self, file_path: str) -> str:
         """

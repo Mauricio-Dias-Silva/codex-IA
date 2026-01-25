@@ -50,7 +50,7 @@ class InfinityEngine:
         self.store = CodexVectorStore()
         # MULTI-BRAIN SETUP
         self.gemini = GeminiClient()
-        self.gemini.model = "gemini-2.0-flash-exp"  # High speed
+        self.gemini.model = "gemini-2.0-flash"  # High speed
         self.groq = GroqClient()  # Backup brain
         self.active_brain = "gemini"  # Start with Gemini
         self.gemini_exhausted = False

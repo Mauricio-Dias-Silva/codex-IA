@@ -15,7 +15,7 @@ if not key:
 try:
     client = genai.Client(api_key=key)
     response = client.models.generate_content(
-        model="gemini-2.0-flash-exp",
+        model="gemini-2.0-flash",
         contents="Hello"
     )
     print("SUCCESS: Key worked!")

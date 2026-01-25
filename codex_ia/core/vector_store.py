@@ -13,12 +13,24 @@ class CodexVectorStore:
     def __init__(self, persistence_path=".codex_memory"):
         self.client = chromadb.PersistentClient(path=persistence_path)
         
-        # We will use Gemini for embeddings if possible, else default
-        # For simplicity in V1, let's strictly use the LLM Client we just patched
-        # But Chroma needs a function. We can wrap it.
+        # [OPTIMIZATION] Strict Local Embeddings 🔒
+        # We enforce usage of SentenceTransformers to ensure ZERO COST for embeddings.
+        # If this fails, we prefer to error out rather than sneakily use paid APIs.
+        try:
+            from chromadb.utils import embedding_functions
+            # Uses a small, fast local model (384 dim)
+            self.emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+            logging.info("🧠 Neural Memory: Local Embeddings Active (Cost-Free)")
+        except Exception as e:
+            logging.error(f"❌ CRITICAL: Could not load local embeddings. Install sentence-transformers! Error: {e}")
+            # We set to None, allowing Chroma to use its default ONNX if available, 
+            # but we warn heavily. We DO NOT fallback to Gemini here.
+            self.emb_fn = None
+
         self.collection = self.client.get_or_create_collection(
-            name="project_codebase",
-            metadata={"hnsw:space": "cosine"}
+            name="project_codebase_local", 
+            metadata={"hnsw:space": "cosine"},
+            embedding_function=self.emb_fn
         )
         
         try:
@@ -36,22 +48,19 @@ class CodexVectorStore:
             import datetime
             timestamp = datetime.datetime.now().isoformat()
             
-            # Simple embedding of the whole message
-            vector = self.llm.embed_content(message)
-            if vector:
-                msg_id = f"chat_{timestamp}_{sender}"
-                self.collection.upsert(
-                    ids=[msg_id],
-                    embeddings=[vector],
-                    documents=[message],
-                    metadatas=[{
-                        "type": "chat_history",
-                        "sender": sender,
-                        "timestamp": timestamp,
-                        "path": "memory_stream" # Virtual path
-                    }]
-                )
-                logging.info(f"💾 Memorized chat from {sender}")
+            # Upsert WITHOUT manual embeddings (Chroma handles it locally now)
+            msg_id = f"chat_{timestamp}_{sender}"
+            self.collection.upsert(
+                ids=[msg_id],
+                documents=[message],
+                metadatas=[{
+                    "type": "chat_history",
+                    "sender": sender,
+                    "timestamp": timestamp,
+                    "path": "memory_stream"
+                }]
+            )
+            logging.info(f"💾 Memorized chat from {sender}")
                 
         except Exception as e:
             logging.error(f"Chat indexing failed: {e}")
@@ -66,8 +75,6 @@ class CodexVectorStore:
             chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
             
             ids = []
-            embeddings = []
-            final_embeddings = [] # Fixed variable name
             metadatas = []
             documents = []
             
@@ -75,28 +82,24 @@ class CodexVectorStore:
             timestamp = datetime.datetime.now().isoformat()
             
             for idx, chunk in enumerate(chunks):
-                vector = self.llm.embed_content(chunk)
-                if vector:
-                    chunk_id = f"text_{timestamp}_{idx}"
-                    ids.append(chunk_id)
-                    final_embeddings.append(vector)
-                    documents.append(chunk)
-                    
-                    # Merge default metadata with provided metadata
-                    base_meta = {"path": "virtual_memory", "chunk_index": idx, "timestamp": timestamp}
-                    if metadata:
-                        base_meta.update(metadata)
-                    
-                    metadatas.append(base_meta)
+                chunk_id = f"text_{timestamp}_{idx}"
+                ids.append(chunk_id)
+                documents.append(chunk)
+                
+                # Merge default metadata with provided metadata
+                base_meta = {"path": "virtual_memory", "chunk_index": idx, "timestamp": timestamp}
+                if metadata:
+                    base_meta.update(metadata)
+                
+                metadatas.append(base_meta)
             
             if ids:
                 self.collection.upsert(
                     ids=ids,
-                    embeddings=final_embeddings,
                     documents=documents,
                     metadatas=metadatas
                 )
-                logging.info(f"Indexed raw text ({len(ids)} chunks)")
+                logging.info(f"Indexed raw text ({len(ids)} chunks locally)")
                 return ids
                 
         except Exception as e:
@@ -113,27 +116,22 @@ class CodexVectorStore:
             chunks = [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
             
             ids = []
-            embeddings = []
             metadatas = []
             documents = []
             
             for idx, chunk in enumerate(chunks):
-                vector = self.llm.embed_content(chunk)
-                if vector:
-                    chunk_id = f"{file_path}_{idx}"
-                    ids.append(chunk_id)
-                    embeddings.append(vector)
-                    documents.append(chunk)
-                    metadatas.append({"path": file_path, "chunk_index": idx})
+                chunk_id = f"{file_path}_{idx}"
+                ids.append(chunk_id)
+                documents.append(chunk)
+                metadatas.append({"path": file_path, "chunk_index": idx})
             
             if ids:
                 self.collection.upsert(
                     ids=ids,
-                    embeddings=embeddings,
                     documents=documents,
                     metadatas=metadatas
                 )
-                logging.info(f"Indexed {file_path} ({len(ids)} chunks)")
+                logging.info(f"Indexed {file_path} ({len(ids)} chunks locally)")
                 
         except Exception as e:
             logging.error(f"Indexing failed for {file_path}: {e}")
@@ -143,12 +141,9 @@ class CodexVectorStore:
         if not self.llm: return []
         
         try:
-            vector = self.llm.embed_content(query)
-            if not vector: return []
-            
-            # Fetch more candidates to filter later
+            # Fetch more candidates using the local embedding function (handled by Chroma)
             results = self.collection.query(
-                query_embeddings=[vector],
+                query_texts=[query],
                 n_results=20  # High Recall Strategy
             )
             
@@ -159,7 +154,7 @@ class CodexVectorStore:
                 for i, doc in enumerate(results['documents'][0]):
                     score = results['distances'][0][i] if results['distances'] else 0
                     meta = results['metadatas'][0][i]
-                    path = meta['path']
+                    path = meta.get('path', 'unknown')
                     
                     # Deduplication logic
                     if path not in seen_paths:
@@ -177,3 +172,17 @@ class CodexVectorStore:
         except Exception as e:
             logging.error(f"Search failed: {e}")
             return []
+
+    def clear_memory(self):
+        """Wipes the local collection for the current project."""
+        try:
+            self.client.delete_collection(name="project_codebase_local")
+            self.collection = self.client.get_or_create_collection(
+                name="project_codebase_local", 
+                embedding_function=self.emb_fn
+            )
+            logging.info("🧹 Neural Memory cleared successfully.")
+            return True
+        except Exception as e:
+            logging.error(f"Error clearing memory: {e}")
+            return False

@@ -15,9 +15,6 @@ class GroqClient:
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not found.")
         
-        # Groq doesn't support web_search native or image_path yet in this simple wrapper
-        # We can implement simple text
-        
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -40,27 +37,59 @@ class GroqClient:
 
 class OllamaClient:
     def __init__(self):
-        self.base_url = "http://localhost:11434/api/generate"
-        self.model = "llama3" # Default, user can change
+        self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.model_code = os.getenv("OLLAMA_MODEL_CODE", "deepseek-coder-v2")
+        self.model_reasoning = os.getenv("OLLAMA_MODEL_REASONING", "deepseek-r1")
+        self._available_models = []
         
-    def send_message(self, message, web_search=False, image_path=None):
-        # Ollama local check
+    def _refresh_models(self):
         try:
-            requests.get("http://localhost:11434")
+            resp = requests.get(f"{self.base_url}/api/tags", timeout=2)
+            if resp.status_code == 200:
+                self._available_models = [m['name'] for m in resp.json().get('models', [])]
         except:
-             return "Error: Ollama is not running on localhost:11434"
+            self._available_models = []
+        
+        # Log available models for debugging
+        if self._available_models:
+            logging.info(f"Ollama Available Models: {self._available_models}")
+
+    def send_message(self, message, web_search=False, image_path=None, reasoning=False):
+        self._refresh_models()
+        
+        # Select target model
+        target = self.model_reasoning if reasoning else self.model_code
+        
+        # Support for the oddly named model found in user's list
+        if not self._available_models:
+             return f"Error: Ollama is running but no models are installed."
+             
+        if target not in self._available_models:
+            # Fallback logic if target model is not installed
+            # Check for 'deepseek-v3.1:671b-cloud' or similar
+            cloud_fallback = [m for m in self._available_models if 'cloud' in m or 'v3' in m]
+            if cloud_fallback:
+                target = cloud_fallback[0]
+            elif reasoning:
+                substitutes = [m for m in self._available_models if 'r1' in m]
+                target = substitutes[0] if substitutes else self._available_models[0]
+            else:
+                substitutes = [m for m in self._available_models if 'coder' in m]
+                target = substitutes[0] if substitutes else self._available_models[0]
+            
+            logging.warning(f"Ollama: Using detected model: {target}")
 
         data = {
-            "model": self.model,
+            "model": target,
             "prompt": message,
             "stream": False
         }
         
         try:
-            resp = requests.post(self.base_url, json=data)
+            url = f"{self.base_url}/api/generate"
+            resp = requests.post(url, json=data, timeout=120)
             if resp.status_code == 200:
-                response_text = resp.json().get('response', '')
-                return response_text
+                return resp.json().get('response', '')
             else:
                 return f"Ollama Error: {resp.text}"
         except Exception as e:
@@ -69,25 +98,18 @@ class OllamaClient:
 class OpenAIClient:
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.model = "gpt-4o" # Flash flagship
+        self.model = "gpt-4o"
         
     def send_message(self, message, web_search=False, image_path=None):
         if not self.api_key:
              return "Error: OPENAI_API_KEY not found."
              
-        # Basic request to OpenAI API
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
         
-        # OpenAI supports vision, but let's keep it simple text first unless image_path provided
         messages = [{"role": "user", "content": message}]
-        
-        if image_path:
-             # Basic Vision handling could go here (base64 encode etc)
-             pass 
-
         data = {
             "model": self.model,
             "messages": messages,
@@ -99,10 +121,8 @@ class OpenAIClient:
             if resp.status_code == 200:
                 return resp.json()['choices'][0]['message']['content']
             else:
-                 return f"OpenAI Error {resp.status_code}: {resp.text}"
+                  return f"OpenAI Error {resp.status_code}: {resp.text}"
         except Exception as e:
-            return f"OpenAI Client Error: {e}"
-
             return f"OpenAI Client Error: {e}"
 
 class XAIClient:
@@ -114,12 +134,10 @@ class XAIClient:
     def send_message(self, message, web_search=False, image_path=None):
         if not self.api_key:
             return "Error: XAI_API_KEY not found."
-            
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
         data = {
             "messages": [
                 {"role": "system", "content": "You are Grok, a rebellious and witty AI assistant."},
@@ -128,7 +146,6 @@ class XAIClient:
             "model": self.model,
             "temperature": 0.5
         }
-        
         try:
             resp = requests.post(self.base_url, headers=headers, json=data)
             if resp.status_code == 200:
@@ -147,21 +164,18 @@ class DeepSeekClient:
     def send_message(self, message, web_search=False, image_path=None):
         if not self.api_key:
             return "Error: DEEPSEEK_API_KEY not found."
-            
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
         data = {
              "messages": [
                 {"role": "system", "content": "You are a helpful assistant"},
                 {"role": "user", "content": message}
             ],
             "model": self.model,
-            "temperature": 0.0 # Coding needs precision
+            "temperature": 0.0
         }
-        
         try:
             resp = requests.post(self.base_url, headers=headers, json=data)
             if resp.status_code == 200:
@@ -172,39 +186,34 @@ class DeepSeekClient:
             return f"DeepSeek Client Error: {e}"
 
 class BrainRouter:
-    """
-    The Council's Receptionist.
-    Routes prompts to the appropriate brain.
-    """
     def __init__(self):
         self.neurons = {}
-        self.active_brain = "gemini" # Default
-        
+        self.active_brain = "gemini"
         # Initialize Brains
         try:
-            self.neurons["gemini"] = GeminiClient()
+            api_key = os.getenv("GEMINI_API_KEY")
+            if api_key and "Cole_Sua_Chave" not in api_key and len(api_key) > 20: 
+                 # Poor man's check to avoid using the leaked/placeholder key
+                 self.neurons["gemini"] = GeminiClient()
+            else:
+                 logging.warning("Gemini Key is missing, placeholder or too short. Skipping.")
         except:
             logging.warning("Gemini Client failed to init in Router")
             
         if os.getenv("GROQ_API_KEY"):
             self.neurons["groq"] = GroqClient()
-            
         if os.getenv("OPENAI_API_KEY"):
             self.neurons["openai"] = OpenAIClient()
-
         if os.getenv("XAI_API_KEY"):
             self.neurons["xai"] = XAIClient()
-
         if os.getenv("DEEPSEEK_API_KEY"):
             self.neurons["deepseek"] = DeepSeekClient()
-            
         self.neurons["ollama"] = OllamaClient()
 
-        # Set default active brain dynamically
         if "gemini" in self.neurons:
             self.active_brain = "gemini"
         elif self.neurons:
-            self.active_brain = list(self.neurons.keys())[0]
+            self.active_brain = [k for k in self.neurons.keys() if k != 'ollama'][0] if any(k != 'ollama' for k in self.neurons.keys()) else 'ollama'
         else:
             self.active_brain = "none"
 
@@ -217,89 +226,91 @@ class BrainRouter:
     def get_active_brain(self):
          return self.neurons.get(self.active_brain)
 
-    def send_message(self, message, web_search=False, image_path=None):
-        """
-        Routes the chat to the active brain.
-        Fallback logic could be added here.
-        """
+    def send_message(self, message, web_search=False, image_path=None, task_type="general"):
+        if task_type == "coding" and "ollama" in self.neurons:
+             try:
+                 requests.get(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), timeout=1)
+                 return self.neurons["ollama"].send_message(message, reasoning=False)
+             except:
+                 pass
+
+        if task_type == "reasoning" and "ollama" in self.neurons:
+             try:
+                 requests.get(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), timeout=1)
+                 return self.neurons["ollama"].send_message(message, reasoning=True)
+             except:
+                 pass
+
         brain = self.get_active_brain()
         if not brain:
-            return "Error: No active brain available. Please check API keys."
-            
-        # Capability Checks
-        if image_path and self.active_brain in ["groq", "ollama"]:
-            # Fallback to Gemini for Vision if available
-            if "gemini" in self.neurons:
-                logging.info(f"Switching to Gemini for Vision request (Active: {self.active_brain})")
-                return self.neurons["gemini"].send_message(message, web_search, image_path)
-            else:
-                 return "Error: Active brain does not support Vision."
+            if "ollama" in self.neurons:
+                 return self.neurons["ollama"].send_message(message)
+            return "Error: No active brain available."
 
-        if web_search and self.active_brain in ["groq", "ollama"]:
-             # Fallback to Gemini for Web Search
-            if "gemini" in self.neurons:
-                logging.info(f"Switching to Gemini for Web Search request")
-                return self.neurons["gemini"].send_message(message, web_search, image_path)
-        
-        return brain.send_message(message, web_search=web_search, image_path=image_path)
+        try:
+            if image_path and self.active_brain in ["groq", "ollama"]:
+                if "gemini" in self.neurons:
+                    resp = self.neurons["gemini"].send_message(message, web_search, image_path)
+                    if "PERMISSION_DENIED" not in resp and "403" not in resp and "Error" not in resp:
+                        return resp
+                return "Error: Active brain does not support Vision, and Gemini fallback failed (Auth Error)."
+
+            if web_search and self.active_brain in ["groq", "ollama"]:
+                if "gemini" in self.neurons:
+                    resp = self.neurons["gemini"].send_message(message, web_search, image_path)
+                    if "PERMISSION_DENIED" not in resp and "403" not in resp and "Error" not in resp:
+                         return resp
+            
+            # Normal Call to Primary Brain
+            response = brain.send_message(message, web_search=web_search, image_path=image_path)
+            
+            # --- AUTO-FALLBACK TO OLLAMA ---
+            # If the primary response (usually Gemini) contains words indicating failure
+            critical_errors = ["PERMISSION_DENIED", "403", "API key was reported as leaked", "API_KEY_INVALID"]
+            if any(err in response for err in critical_errors) and "ollama" in self.neurons:
+                 logging.warning(f"Primary brain {self.active_brain} AUTH ERROR. Falling back to LOCAL OLLAMA...")
+                 
+                 # Verify if Ollama is running
+                 try:
+                     requests.get(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), timeout=1)
+                     fallback_resp = self.neurons["ollama"].send_message(message)
+                     if "Error" not in fallback_resp:
+                          return f"🧠 [FALLBACK LOCAL OLLAMA]:\n{fallback_resp}"
+                     else:
+                          return f"⚠️ [SISTEMA] Gemini falhou e Ollama reportou erro: {fallback_resp}"
+                 except:
+                     return f"🚨 [ERRO CRÍTICO] Gemini falhou (403) e Ollama não está rodando. Por favor, abra o Ollama Desktop."
+            
+            return response
+
+        except Exception as e:
+            if "ollama" in self.neurons:
+                 return f"[FALLBACK LOCAL ERR] {self.neurons['ollama'].send_message(message)}"
+            return f"Router Error: {e}"
 
     def council_meeting(self, message):
-        """
-        The Council Convenes.
-        Broadcasting the message to ALL available brains and synthesizing the result.
-        """
         responses = {}
-        errors = []
-        
-        # 1. Broadcast Phase
-        available_neurons = [n for n in self.neurons.keys() if n != 'ollama'] # Skip local slower ollama for high-level debate unless requested
-        if 'ollama' in self.neurons and len(available_neurons) == 0:
-             available_neurons.append('ollama') # Use ollama if nothing else
-
-        logging.info(f"Council convening with: {available_neurons}")
+        available_neurons = [n for n in self.neurons.keys() if n != 'ollama']
+        if 'ollama' in self.neurons and not available_neurons:
+             available_neurons.append('ollama')
         
         for name in available_neurons:
             try:
-                # Ask each brain
                 responses[name] = self.neurons[name].send_message(message)
             except Exception as e:
-                errors.append(f"{name} failed: {e}")
+                logging.error(f"{name} failed: {e}")
 
-        # 2. Synthesis Phase
-        # Prefer smart models, but accept anyone
         chair = self.neurons.get('openai') or self.neurons.get('gemini') or self.neurons.get('xai') or self.neurons.get('deepseek') or self.neurons.get('ollama')
-        
         if not chair:
-             return "Council Failed: No Chairperson available (Verification Failed)."
+             return "Council Failed: No Chairperson available."
 
-        # Compile the Minutes
         minutes = "## The Council of AIs - Debate Minutes 📜\n\n"
         minutes += f"**Topic:** {message}\n\n"
-        
-        synthesis_prompt = f"""
-        You are the Chairperson of a Council of Superintelligences.
-        The user asked: '{message}'
-        
-        Here are the opinions of the council members:
-        
-        """
-        
+        synthesis_prompt = f"You are the Chairperson of a Council of Superintelligences. The user asked: '{message}'\n\n"
         for name, response in responses.items():
-            minutes += f"### 🗣️ {name.upper()}'s Opinion:\n{response[:500]}...\n\n" # Truncate for display in prompt but use full for synthesis
+            minutes += f"### 🗣️ {name.upper()}'s Opinion:\n{response[:500]}...\n\n"
             synthesis_prompt += f"--- {name.upper()} SAID: ---\n{response}\n\n"
             
-        synthesis_prompt += """
-        --- END OF OPINIONS ---
-        
-        Your Job:
-        1. Analyze the points of agreement and disagreement.
-        2. Identify the most insightful or accurate parts of each response.
-        3. Synthesize a FINAL, GOLDEN ANSWER that combines the best of all worlds.
-        4. If the goal is humanitarian or prediction, look for the 'Highest Good' in the answers.
-        
-        Return your Synthesis.
-        """
-        
+        synthesis_prompt += "\nSynthesize a FINAL, GOLDEN ANSWER."
         final_verdict = chair.send_message(synthesis_prompt)
-        
         return f"{minutes}\n---\n## ⚖️ FINAL VERDICT:\n{final_verdict}"

@@ -5,30 +5,24 @@ def log_startup_error(msg):
     with open("startup_error.txt", "a") as f:
         f.write(msg + "\n")
 
-try:
-    import flet as ft
-    import os
-    import sys
-    import threading
-    import time
-    import threading
-    import time
-    from dotenv import load_dotenv
-    from fpdf import FPDF
-    import datetime
-    
-    # Ensure we can import codex_ia
-    sys.path.append(os.getcwd())
-    
-    # Try importing critical libs immediately to catch missing deps
-    try:
-        import google.generativeai
-        import rich
-    except ImportError as e:
-        log_startup_error(f"CRITICAL: Missing dependency: {e}")
+import flet as ft
+import os
+import sys
+import threading
+import time
+from dotenv import load_dotenv
+from fpdf import FPDF
+import datetime
 
-except Exception as e:
-    log_startup_error(f"Error during imports: {traceback.format_exc()}")
+# Ensure we can import codex_ia
+sys.path.append(os.getcwd())
+
+# Try importing critical libs immediately to catch missing deps
+try:
+    import google.generativeai
+    import rich
+except ImportError as e:
+    log_startup_error(f"CRITICAL: Missing dependency: {e}")
 
 class CodexIDE:
     def __init__(self, page: ft.Page):
@@ -40,13 +34,34 @@ class CodexIDE:
             self.agent = None
             self.current_project_dir = os.getcwd() 
             self.selected_file_path = None
+            self.vector_store = None
             
+            # [PHASE 2] Voice Command State 🎙️
+            self.is_listening = False
+            self.mic_button = ft.IconButton(
+                icon="mic_off", 
+                icon_color="grey", 
+                tooltip="Toggle Voice Command (Protocol Jarvis)",
+                on_click=self.toggle_voice_mode
+            )
+            
+            # Health Indicators
+            self.health_icons = {
+                "gemini": ft.Icon("cloud", color="grey", size=16, tooltip="Gemini (Cloud) Status"),
+                "ollama": ft.Icon("computer", color="grey", size=16, tooltip="Ollama (Local) Status"),
+                "groq": ft.Icon("bolt", color="grey", size=16, tooltip="Groq Status")
+            }
+            
+            # [PHASE 3] Sentinel Alerts
+            self.sentinel_alerts = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+
             # UI Components
             self.build_ui()
             self.page.update()
             
             # Init Agent
             self.init_agent(self.current_project_dir)
+            self.start_health_monitor()
             self.page.update()
         except Exception as e:
             self.page.add(ft.Text(f"Startup Error: {e}", color="red"))
@@ -109,12 +124,25 @@ class CodexIDE:
                     try:
                         with open(file_path, 'r', encoding='utf-8') as f:
                             content = f.read()
-                            # Use relative path as key if possible, or filename
-                            # ideally we want consistent keys. For now using filename to match index_project
-                            self.vector_store.index_file(filename, content)
-                            self.add_log(f"🧠 Updated Memory: {filename}", "purple")
+                        
+                        # 1. Update Memory
+                        self.vector_store.index_file(filename, content)
+                        self.add_log(f"🧠 Updated Memory: {filename}", "purple")
+                        
+                        # 2. [PHASE 3] Proactive Bug Check (Local LLM)
+                        if self.agent:
+                            analysis = self.agent.analyze_file_change(file_path, content)
+                            if analysis:
+                                self.sentinel_alerts.controls.insert(0, ft.Container(
+                                    content=ft.Column([
+                                        ft.Text(f"👁️ {filename}", weight="bold", color="cyan"),
+                                        ft.Markdown(analysis)
+                                    ]),
+                                    bgcolor="#2b2d31", padding=10, border_radius=5, margin=5
+                                ))
+                                self.page.update()
                     except Exception as e:
-                        print(f"Re-index failed: {e}")
+                        print(f"Sentinel processing failed: {e}")
             
             threading.Thread(target=reindex, daemon=True).start()
 
@@ -136,7 +164,7 @@ class CodexIDE:
             if not self.vector_store: return
             count = 0
             for root, dirs, files in os.walk(path):
-                if ".git" in root or "__pycache__" in root or "venv" in root: continue
+                if any(x in root.lower() for x in [".git", "__pycache__", "venv", "node_modules", "static", "staticfiles", "dist", "build", "assets"]): continue
                 for f in files:
                     if f.endswith(('.py', '.md', '.html', '.css', '.js')):
                         full_path = os.path.join(root, f)
@@ -156,6 +184,10 @@ class CodexIDE:
         self.page.update()
 
     def build_ui(self):
+        # --- Core Controls ---
+        # self.file_picker = ft.FilePicker()
+        # self.page.overlay.append(self.file_picker)
+
         # --- Sidebar ---
         self.rail = ft.NavigationRail(
             selected_index=0,
@@ -164,17 +196,12 @@ class CodexIDE:
             min_extended_width=200,
             group_alignment=-0.9,
             destinations=[
-                ft.NavigationRailDestination(icon="code", selected_icon="code", label="Editor"),
-                ft.NavigationRailDestination(icon="chat_bubble_outline", selected_icon="chat_bubble", label="Chat"),
-                ft.NavigationRailDestination(icon="rocket_launch_outlined", selected_icon="rocket_launch", label="Missions"),
-                ft.NavigationRailDestination(icon="bedtime_outlined", selected_icon="bedtime", label="Night Shift"),
-                ft.NavigationRailDestination(icon="memory", selected_icon="memory", label="IoT Lab"),
-                ft.NavigationRailDestination(icon="school_outlined", selected_icon="school", label="Tutor"),
-                ft.NavigationRailDestination(icon="radar", selected_icon="radar", label="The Hunter"),
-                ft.NavigationRailDestination(icon="hive", selected_icon="hive", label="The Swarm"),
-                ft.NavigationRailDestination(icon="groups", selected_icon="groups", label="The Council"),
-                ft.NavigationRailDestination(icon="monetization_on", selected_icon="monetization_on", label="Shark Tank"),
-                ft.NavigationRailDestination(icon="apps", selected_icon="apps_outage", label="Neural OS"),
+                ft.NavigationRailDestination(icon="code", label="Editor"),
+                ft.NavigationRailDestination(icon="chat", label="Chat"),
+                ft.NavigationRailDestination(icon="rocket", label="Missions"),
+                ft.NavigationRailDestination(icon="memory", label="IoT"),
+                ft.NavigationRailDestination(icon="apps", label="Neural"),
+                ft.NavigationRailDestination(icon="healing", label="Debug"),
             ],
             on_change=self.nav_change,
             bgcolor="#1e1f22",
@@ -192,6 +219,7 @@ class CodexIDE:
         self.council_view = self.build_council_view()
         self.shark_view = self.build_shark_view()
         self.neural_view = self.build_neural_view()
+        self.debug_view = self.build_debug_view() # [PHASE 3]
         
         # --- Footer/Log ---
         self.status_bar = ft.Text("Ready", size=12, color="grey")
@@ -211,8 +239,8 @@ class CodexIDE:
             title=ft.Text("Open Project"),
             content=self.path_input,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.page.close_dialog()),
-                ft.TextButton("Open", on_click=self.confirm_path)
+                ft.TextButton(content=ft.Text("Cancel"), on_click=lambda _: self.page.close_dialog()),
+                ft.TextButton(content=ft.Text("Open"), on_click=self.confirm_path)
             ],
         )
 
@@ -230,8 +258,8 @@ class CodexIDE:
                             # Header
                             ft.Container(
                                 content=ft.Row([
-                                    ft.Icon("folder_open", color="cyan"),
-                                    ft.TextButton("Open Project", on_click=lambda _: self.page.open_dialog(self.path_dialog)),
+                                    ft.Icon("folder", color="cyan"),
+                                    ft.TextButton(content=ft.Text("Open Project", color="cyan"), on_click=lambda _: self.page.open_dialog(self.path_dialog)),
                                     ft.Container(expand=True),
                                     self.status_bar
                                 ]),
@@ -249,6 +277,10 @@ class CodexIDE:
                 spacing=0
             )
         )
+        
+        # Force initial view update
+        self.nav_change(None)
+        self.page.update()
 
     # --- Event Handlers ---
 
@@ -266,32 +298,50 @@ class CodexIDE:
         pass
 
     def nav_change(self, e):
-        idx = e.control.selected_index
+        # Initial call (e=None) or interaction change
+        idx = self.rail.selected_index if e is None else e.control.selected_index
         
-            
-        views = [
-            self.editor_view, 
-            self.chat_view, 
-            self.mission_view, 
-            self.night_view,
-            self.iot_view,
-            self.tutor_view,
-            self.hunter_view,
-            self.swarm_view,
-            self.council_view,
-            self.shark_view,
-            self.neural_view # Index 10
-        ]
-        if idx < len(views):
+        # Simplified mapping (Step 368)
+        views = {
+            0: self.editor_view,
+            1: self.chat_view,
+            2: self.mission_view,
+            3: self.iot_view,
+            4: self.neural_view,
+            5: self.debug_view
+        }
+        
+        if idx in views:
             self.body_container.content = views[idx]
         
         if idx == 0: self.refresh_file_list()
-        self.page.update()
+        
+        try:
+            self.page.update()
+        except:
+            pass
 
     def add_log(self, msg, color="white"):
         self.status_bar.value = msg
         self.status_bar.color = color
         self.page.update()
+
+    def start_health_monitor(self):
+        """Starts a background thread to check AI provider health."""
+        def monitor():
+            while True:
+                if self.agent and hasattr(self.agent.llm_client, "check_all_health"):
+                    try:
+                        status = self.agent.llm_client.check_all_health()
+                        for name, is_healthy in status.items():
+                            if name in self.health_icons:
+                                self.health_icons[name].color = "green" if is_healthy else "red"
+                        self.page.update()
+                    except Exception as e:
+                        print(f"Health monitor error: {e}")
+                time.sleep(15) # Check every 15 seconds
+        
+        threading.Thread(target=monitor, daemon=True).start()
 
     # --- Builder Methods ---
 
@@ -331,7 +381,7 @@ class CodexIDE:
                     content=ft.Column([
                         ft.Text("Explorer", weight="bold"), 
                         ft.Divider(height=1, color="#333"), 
-                        ft.ElevatedButton("Refresh", on_click=lambda _: self.refresh_file_list(), height=30),
+                    ft.ElevatedButton(content=ft.Text("Refresh"), on_click=lambda _: self.refresh_file_list(), height=30),
                         self.file_tree
                     ], spacing=5, expand=True),
                     width=250,
@@ -358,7 +408,7 @@ class CodexIDE:
         try:
             items_found = 0
             for root, dirs, files in os.walk(self.current_project_dir):
-                if ".git" in root or "__pycache__" in root or "venv" in root: continue
+                if any(x in root.lower() for x in [".git", "__pycache__", "venv", "node_modules", "static", "staticfiles", "dist", "build", "assets"]): continue
                 for f in files:
                     items_found += 1
                     path = os.path.join(root, f)
@@ -368,8 +418,7 @@ class CodexIDE:
                     
                     self.file_tree.controls.append(
                         ft.TextButton(
-                            text=f"📄 {rel_path}",
-                            style=ft.ButtonStyle(color="white"),
+                            content=ft.Text(f"📄 {rel_path}", color="white"),
                             on_click=lambda _, p=path: self.open_file_in_editor(p)
                         )
                     )
@@ -394,19 +443,142 @@ class CodexIDE:
         self.chat_history = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
         self.chat_input = ft.TextField(hint_text="Ask Codex...", expand=True, on_submit=lambda e: self.send_chat())
         
+        # [OPTIMIZATION] Vision Lab 👁️
+        self.selected_image_path = None
+        self.image_preview = ft.Container(visible=False)
+        
+        def clear_image(e):
+            self.selected_image_path = None
+            self.image_preview.visible = False
+            self.page.update()
+
+        def on_image_picked(e):
+            if e.files and len(e.files) > 0:
+                self.selected_image_path = e.files[0].path
+                self.image_preview.content = ft.Row([
+                    ft.Icon("image", color="cyan"), 
+                    ft.Text(f"Attached: {e.files[0].name}", color="cyan", size=12),
+                    ft.IconButton(icon="close", icon_size=14, on_click=clear_image)
+                ], alignment=ft.MainAxisAlignment.START)
+                self.image_preview.visible = True
+                self.add_log(f"👁️ Vision Ready: {e.files[0].name}", "cyan")
+                self.page.update()
+
+        # self.file_picker.on_result = on_image_picked
+
+
+        # [OPTIMIZATION] Brain Selector 🧠
+        self.brain_selector = ft.Dropdown(
+            options=[
+                ft.dropdown.Option("auto", "Brain Router (Auto)"),
+                ft.dropdown.Option("gemini", "Gemini 1.5 (Cloud)"),
+                ft.dropdown.Option("ollama", "Ollama (Local - 0 Custo)"),
+                ft.dropdown.Option("groq", "Groq (High Speed)"),
+            ],
+            value="auto",
+            width=200,
+            height=40,
+            text_size=12
+        )
+        
         return ft.Container(
             content=ft.Column([
                 ft.Row([
                     ft.Text("Codex Assistant", size=20, weight="bold"),
                     ft.Container(expand=True),
+                    ft.Row([
+                        self.health_icons["gemini"],
+                        self.health_icons["ollama"],
+                        self.health_icons["groq"]
+                    ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                    ft.VerticalDivider(width=20),
+                    # [FEATURE] Vision Button
+                    # ft.IconButton(icon="add_a_photo", tooltip="Attach Image (Codex Vision)", on_click=lambda _: self.file_picker.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)),
+                    
+                    # [FEATURE] Voice Command (Jarvis) 🎙️
+                    self.mic_button,
+
+                    self.brain_selector,
                     ft.IconButton(icon="picture_as_pdf", icon_color="red", tooltip="Export Chat to PDF", on_click=self.export_chat_to_pdf)
                 ]),
                 ft.Divider(),
-                self.chat_history,
-                ft.Row([self.chat_input, ft.Container(content=ft.Icon("send"), on_click=lambda _: self.send_chat(), padding=5, tooltip="Send")])
+                ft.Row([
+                    # Col 1: Chat Main
+                    ft.Column([
+                        self.chat_history,
+                        self.image_preview, # Show attached image indicator above input
+                        ft.Row([self.chat_input, ft.Container(content=ft.Icon("send"), on_click=lambda _: self.send_chat(), padding=5, tooltip="Send")])
+                    ], expand=3),
+                    
+                    # Col 2: Sentinel Alerts (Phase 3)
+                    ft.VerticalDivider(width=1),
+                    ft.Column([
+                        ft.Text("Sentinel Alerts 👁️", weight="bold", size=14, color="cyan"),
+                        self.sentinel_alerts,
+                        ft.ElevatedButton(content=ft.Text("Clear Alerts"), on_click=lambda _: (self.sentinel_alerts.controls.clear(), self.page.update()))
+                    ], expand=1)
+                ], expand=True)
             ]),
             padding=20, expand=True
         )
+
+    def toggle_voice_mode(self, e):
+        """Activates/Deactivates Jarvis Mode."""
+        if self.is_listening:
+            self.is_listening = False
+            self.mic_button.icon = "mic_off"
+            self.mic_button.icon_color = "grey"
+            self.add_log("🔇 Voice Mode Deactivated", "grey")
+        else:
+            self.is_listening = True
+            self.mic_button.icon = "mic"
+            self.mic_button.icon_color = "red"
+            self.add_log("🎙️ Jarvis is listening...", "red")
+            threading.Thread(target=self.listen_loop, daemon=True).start()
+        self.page.update()
+
+    def listen_loop(self):
+        """Background listener for Voice Commands."""
+        try:
+            import speech_recognition as sr
+            r = sr.Recognizer()
+            
+            with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source)
+                
+                while self.is_listening:
+                    try:
+                        # Listen for a moment
+                        audio = r.listen(source, timeout=5, phrase_time_limit=10)
+                        
+                        # Transcribe
+                        text = r.recognize_google(audio, language="pt-BR")
+                        
+                        if text:
+                            text = text.lower()
+                            self.add_log(f"🗣️ Heard: {text}", "cyan")
+                            
+                            # Auto-send to chat
+                            self.chat_input.value = text
+                            self.send_chat()
+                            
+                    except sr.WaitTimeoutError:
+                        pass # Just silence
+                    except sr.UnknownValueError:
+                        pass # Noise
+                    except Exception as e:
+                        print(f"Voice Error: {e}")
+                        if not self.is_listening: break
+        except ImportError:
+            self.add_log("❌ Install 'SpeechRecognition' and 'pyaudio'", "red")
+            self.is_listening = False
+            self.mic_button.icon = "mic_off"
+            self.page.update()
+        except Exception as ex:
+             self.add_log(f"Microphone Error: {ex}", "red")
+             self.is_listening = False
+             self.mic_button.icon = "mic_off"
+             self.page.update()
     
     def export_chat_to_pdf(self, e):
         if not self.chat_history.controls:
@@ -474,24 +646,55 @@ class CodexIDE:
 
     def send_chat(self):
         msg = self.chat_input.value
-        if not msg or not self.agent: return
+        # Allow sending if there is an image, even if msg is empty (captioning)
+        if (not msg and not self.selected_image_path) or not self.agent: return
+        
         self.chat_input.value = ""
         
-        self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Text(msg), bgcolor="#2b2d31", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
+        # Get selected brain
+        selected_brain = self.brain_selector.value
+        use_fallback = (selected_brain == "auto")
+        
+        # Capture current image if any
+        current_image = self.selected_image_path
+        
+        # UI Feedback for Image
+        user_content = [ft.Text(msg)]
+        if current_image:
+             user_content.insert(0, ft.Container(
+                 content=ft.Row([ft.Icon("image", color="cyan"), ft.Text("Image Attached", italic=True, size=12)]),
+                 margin=ft.margin.only(bottom=5)
+             ))
+
+        # If not auto, set the active brain in the router
+        if not use_fallback:
+            self.agent.llm_client.active_brain = selected_brain
+
+        self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Column(user_content), bgcolor="#2b2d31", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.END))
         self.page.update()
         
+        # Clear image selection from UI immediately
+        if self.selected_image_path:
+             self.selected_image_path = None
+             self.image_preview.visible = False
+             self.page.update()
+        
         # [MEMORY HOOK] User Message
-        if self.vector_store:
+        if hasattr(self, 'vector_store') and self.vector_store:
             threading.Thread(target=self.vector_store.index_chat, args=("USER", msg), daemon=True).start()
         
         def worker():
-            resp = self.agent.chat(msg)
-            self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Markdown(resp), bgcolor="#1e1f22", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
-            self.page.update()
-            
-            # [MEMORY HOOK] AI Response
-            if self.vector_store:
-                self.vector_store.index_chat("CODEX", resp)
+            try:
+                # Pass image_path to the agent
+                resp = self.agent.chat(msg, use_fallback=use_fallback, image_path=current_image)
+                self.chat_history.controls.append(ft.Row([ft.Container(content=ft.Markdown(resp), bgcolor="#1e1f22", padding=10, border_radius=10)], alignment=ft.MainAxisAlignment.START))
+                self.page.update()
+                
+                # [MEMORY HOOK] AI Response
+                if hasattr(self, 'vector_store') and self.vector_store:
+                    self.vector_store.index_chat("CODEX", resp)
+            except Exception as e:
+                self.add_log(f"Chat Error: {e}", "red")
                 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -536,7 +739,7 @@ class CodexIDE:
                      self.page.update()
              threading.Thread(target=worker, daemon=True).start()
 
-         return ft.Container(content=ft.Column([ft.Text("Night Shift", size=20), ft.ElevatedButton("Start", on_click=run_night), self.night_log]), padding=20, expand=True)
+         return ft.Container(content=ft.Column([ft.Text("Night Shift", size=20), ft.ElevatedButton(content=ft.Text("Start"), on_click=run_night), self.night_log]), padding=20, expand=True)
 
     def build_iot_view(self):
         self.iot_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
@@ -561,10 +764,64 @@ class CodexIDE:
                     self.page.update()
                     
             threading.Thread(target=worker, daemon=True).start()
+
+    def download_model(self, model_name):
+        """Triggers ollama pull command."""
+        self.iot_log.controls.append(ft.Text(f"📥 Baixando modelo: {model_name}...", color="yellow"))
+        self.page.update()
+        
+        def pull():
+            try:
+                import subprocess
+                process = subprocess.Popen(f"ollama pull {model_name}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                for line in process.stdout:
+                    if "success" in line.lower():
+                        self.iot_log.controls.append(ft.Text(f"✅ {model_name} baixado com sucesso!", color="green"))
+                    elif "pulling" in line.lower():
+                        # Simple progress indicator could go here
+                        pass
+                self.page.update()
+            except Exception as e:
+                self.iot_log.controls.append(ft.Text(f"Erro ao baixar: {e}", color="red"))
+                self.page.update()
+        
+        threading.Thread(target=pull, daemon=True).start()
+
+    def handle_clear_memory(self, e):
+        """Clears the local vector database."""
+        if self.vector_store:
+            success = self.vector_store.clear_memory()
+            if success:
+                self.add_log("🧠 Neural Memory wiped successfully.", "green")
+                self.iot_log.controls.append(ft.Text("🧹 Memória Neural limpa.", color="green"))
+            else:
+                self.add_log("❌ Failed to clear memory.", "red")
+            self.page.update()
+
+    def handle_reindex(self, e):
+        """Manually triggers project reindexing."""
+        if self.vector_store:
+            self.add_log("🔄 Manually reindexing project...", "blue")
+            self.index_project(self.current_project_dir)
+            self.iot_log.controls.append(ft.Text("🔄 Reindexação iniciada...", color="blue"))
+            self.page.update()
             
         return ft.Container(content=ft.Column([
             ft.Text("IoT Architect", size=20, weight="bold"),
-            ft.Row([self.iot_desc, self.iot_plat, ft.ElevatedButton("Generate", on_click=run_iot)]),
+            ft.Row([self.iot_desc, self.iot_plat, ft.ElevatedButton(content=ft.Text("Generate"), on_click=run_iot)]),
+            ft.Divider(),
+            ft.Text("Local Model Manager (Ollama)", size=18, weight="bold", color="yellow"),
+            ft.Row([
+                ft.ElevatedButton(content=ft.Text("Pull Llama 3.2 (3B)"), on_click=lambda _: self.download_model("llama3.2:3b"), icon="download"),
+                ft.ElevatedButton(content=ft.Text("Pull Llama 3.2 (1B)"), on_click=lambda _: self.download_model("llama3.2:1b"), icon="download"),
+                ft.ElevatedButton(content=ft.Text("Pull Qwen2.5-Coder (1.5B)"), on_click=lambda _: self.download_model("qwen2.5-coder:1.5b"), icon="download"),
+            ]),
+            ft.Divider(),
+            ft.Text("Neural Memory Tools", size=18, weight="bold", color="purple"),
+            ft.Row([
+                ft.ElevatedButton(content=ft.Text("🧹 Clear Memory"), on_click=self.handle_clear_memory, color="red"),
+                ft.ElevatedButton(content=ft.Text("🔄 Force Reindex"), on_click=self.handle_reindex, color="purple"),
+            ]),
             ft.Divider(),
             self.iot_log
         ]), padding=20, expand=True)
@@ -593,7 +850,7 @@ class CodexIDE:
             
         return ft.Container(content=ft.Column([
             ft.Text("Universal Tutor", size=20, weight="bold"),
-            ft.Row([self.tutor_input, ft.ElevatedButton("Teach Me", on_click=run_tutor)]),
+            ft.Row([self.tutor_input, ft.ElevatedButton(content=ft.Text("Teach Me"), on_click=run_tutor)]),
             ft.Divider(),
             self.tutor_log
         ]), padding=20, expand=True)
@@ -635,29 +892,174 @@ class CodexIDE:
 
         return ft.Container(content=ft.Column([
             ft.Text("The Hunter", size=20, weight="bold"),
-            ft.ElevatedButton("Scan Opportunities", on_click=run_hunt, icon="radar"),
+            ft.ElevatedButton(content=ft.Text("Scan Opportunities"), on_click=run_hunt, icon="radar"),
             ft.Divider(),
             self.hunter_content
         ]), padding=20, expand=True)
 
     def build_swarm_view(self):
-        self.swarm_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
-        self.mission_input = ft.TextField(hint_text="Describe the mission for the Swarm...", expand=True)
-        
-        # Init Swarm Backend
-        try:
-            from codex_ia.core.swarm.orchestrator import SwarmOrchestrator
-            from codex_ia.core.swarm.specialists import ArchitectAgent, DeveloperAgent, QAAgent
-            
-            self.swarm = SwarmOrchestrator()
-            self.swarm.register_agent(ArchitectAgent())
-            self.swarm.register_agent(DeveloperAgent())
-            self.swarm.register_agent(QAAgent())
-            
-        except Exception as e:
-            self.add_log(f"Swarm Init Error: {e}", "red")
-            self.swarm = None
+        """
+        [PHASE 4] The Hive Mind (Swarm Intelligence)
+        """
+        self.mission_input = ft.TextField(
+            label="Swarm Mission Objective", 
+            hint_text="Describe the complex software system you want the Swarm to build...", 
+            multiline=True, 
+            min_lines=3,
+            text_size=14,
+            border_color="cyan"
+        )
+        self.swarm_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True, spacing=5)
 
+        def deploy_swarm(e):
+            if not self.swarm:
+                self.swarm_log.controls.append(ft.Text("❌ Swarm not initialized (Check startup logs)", color="red"))
+                self.page.update()
+                return
+            
+            mission = self.mission_input.value
+            if not mission:
+                self.mission_input.error_text = "Mission cannot be empty"
+                self.page.update()
+                return
+            
+            self.mission_input.error_text = None
+            self.swarm_log.controls.append(ft.Text(f"🚀 Deploying Swarm for mission: {mission}...", color="cyan", weight="bold"))
+            self.page.update()
+            
+            def worker():
+                try:
+                    for sender, content in self.swarm.start_mission_iterative(mission):
+                        color = "cyan" if sender == "SYSTEM" else "green" if sender == "Developer" else "red" if sender == "QA" else "orange"
+                        
+                        # Format message for better readability
+                        if sender == "SYSTEM":
+                            self.swarm_log.controls.append(ft.Text(f"{content}", color=color, italic=True))
+                        else:
+                            self.swarm_log.controls.append(ft.Container(
+                                content=ft.Column([
+                                    ft.Text(f"👤 {sender}", weight="bold", color=color),
+                                    ft.Markdown(content)
+                                ]),
+                                bgcolor="#1e1f22",
+                                padding=10,
+                                border_radius=5,
+                                margin=ft.margin.only(bottom=5)
+                            ))
+                        self.page.update()
+                        
+                except Exception as ex:
+                    self.swarm_log.controls.append(ft.Text(f"❌ Critical Swarm Error: {ex}", color="red", weight="bold"))
+                    self.page.update()
+
+            threading.Thread(target=worker, daemon=True).start()
+
+        return ft.Container(content=ft.Column([
+            ft.Row([ft.Icon("hub", color="cyan", size=30), ft.Text("The Hive Mind (Swarm Intelligence)", size=22, weight="bold", color="cyan")]),
+            ft.Text("Multi-Agent Collaboration: Architect, Developer, and QA working in unison.", size=12, color="grey"),
+            ft.Divider(color="grey"),
+            self.mission_input,
+            ft.ElevatedButton(content=ft.Text("Deploy Swarm Agents"), on_click=deploy_swarm, icon="rocket_launch", bgcolor="pink", color="white", height=45),
+            ft.Divider(),
+            ft.Container(
+                content=self.swarm_log, 
+                bgcolor="#111111", 
+                padding=15, 
+                border_radius=8, 
+                border=ft.border.all(1, "#333333"),
+                expand=True
+            )
+        ]), padding=20, expand=True)
+
+    def build_debug_view(self):
+        """
+        [PHASE 3] Autonomous Self-Healing UI.
+        Integrates with core.auto_debugger.AutoDebugger.
+        """
+        self.debug_log = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
+        self.test_cmd_input = ft.TextField(label="Test Command", value="pytest", width=300)
+        
+        def run_self_healing(_):
+            self.debug_log.controls.clear()
+            self.debug_log.controls.append(ft.Text("🚑 Starting Autonomous Self-Healing Sequence...", color="orange", weight="bold"))
+            self.debug_log.controls.append(ft.ProgressBar())
+            self.page.update()
+            
+            def worker():
+                try:
+                    from codex_ia.core.auto_debugger import AutoDebugger
+                    from pathlib import Path
+                    
+                    debugger = AutoDebugger(Path(self.current_project_dir))
+                    
+                    # Redirect print to log
+                    def log_callback(msg):
+                        # Clean up color codes if any
+                        clean_msg = msg.replace('\033[92m', '').replace('\033[0m', '')
+                        color = "green" if "✅" in msg else "red" if "❌" in msg or "⚠️" in msg else "white"
+                        self.debug_log.controls.append(ft.Text(clean_msg, color=color))
+                        self.page.update()
+                        
+                    # Inject logger (Monkey patch print for demo simplicity or use custom observer)
+                    # For now we just run it and capture result
+                    
+                    self.debug_log.controls.append(ft.Text(f"Running tests: {self.test_cmd_input.value}...", color="cyan"))
+                    self.page.update()
+                    
+                    result = debugger.auto_fix_loop(max_iterations=3)
+                    
+                    # Remove progress bar
+                    if isinstance(self.debug_log.controls[-1], ft.ProgressBar):
+                        self.debug_log.controls.pop()
+                        
+                    if result['success']:
+                        self.debug_log.controls.append(ft.Text(f"✅ HEALING SUCCESSFUL! Fixed in {result['iterations']} iterations.", size=20, color="green", weight="bold"))
+                    else:
+                        self.debug_log.controls.append(ft.Text(f"❌ HEALING FAILED. Final status: {result['final_status']}", size=20, color="red", weight="bold"))
+                        
+                    # Show details
+                    for fix in result['fixes_applied']:
+                         with self.debug_log.controls.append(ft.ExpansionTile(
+                             title=ft.Text(f"Fix for {fix['error']['type']}"),
+                             controls=[
+                                 ft.Markdown(f"**Diagnosis:** {fix['analysis'].get('diagnosis')}\n\n**Patch:**\n```python\n{fix['analysis'].get('code_patch')}\n```")
+                             ]
+                         )): pass
+                    
+                    self.page.update()
+                    
+                except Exception as e:
+                    import traceback
+                    self.debug_log.controls.append(ft.Text(f"Critical Error: {e}\n{traceback.format_exc()}", color="red"))
+                    self.page.update()
+
+            threading.Thread(target=worker, daemon=True).start()
+
+        return ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    ft.Icon("healing", color="red", size=30),
+                    ft.Text("Autonomous Self-Healing", size=25, weight="bold")
+                ]),
+                ft.Text("This agent runs your tests, detects errors, and re-writes the code automatically until it passes.", italic=True, color="grey"),
+                ft.Divider(),
+                ft.Row([
+                    self.test_cmd_input,
+                    ft.ElevatedButton(content=ft.Text("START HEALING LOOP"), icon="medical_services", on_click=run_self_healing, bgcolor="red", color="white")
+                ]),
+                ft.Divider(),
+                ft.Container(
+                    content=self.debug_log,
+                    bgcolor="#1a1a1a",
+                    border=ft.border.all(1, "#333"),
+                    border_radius=10,
+                    padding=15,
+                    expand=True
+                )
+            ]),
+            padding=20,
+            expand=True
+        )
         def run_mission(_):
             goal = self.mission_input.value
             if not goal or not self.swarm: return
@@ -667,25 +1069,36 @@ class CodexIDE:
             self.page.update()
             
             def worker():
-                # Stream logs via simple polling of message bus (Prototype)
-                # In real prod, use callbacks. Here we just run synchronous for simplicity of demo
-                
-                res = self.swarm.start_mission(goal)
-                
-                # Render the conversation from bus
-                for msg in self.swarm.message_bus:
-                    color = "white"
-                    if "Architect" in msg: color = "cyan"
-                    elif "Developer" in msg: color = "green"
-                    elif "QA" in msg: color = "red"
+                try:
+                    # Clear previous bus state if needed or just append
+                    # self.swarm.message_bus = [] 
                     
-                    self.swarm_log.controls.append(ft.Text(msg, color=color, font_family="Consolas"))
+                    # Start mission in a separate thread so we can poll logs
+                    mission_thread = threading.Thread(target=self.swarm.start_mission, args=(goal,), daemon=True)
+                    mission_thread.start()
+                    
+                    last_idx = 0
+                    while mission_thread.is_alive() or last_idx < len(self.swarm.message_bus):
+                        current_bus = self.swarm.message_bus
+                        if last_idx < len(current_bus):
+                            new_msgs = current_bus[last_idx:]
+                            for msg in new_msgs:
+                                color = "white"
+                                if "Architect" in msg: color = "cyan"
+                                elif "Developer" in msg: color = "green"
+                                elif "QA" in msg: color = "red"
+                                
+                                self.swarm_log.controls.append(ft.Text(msg, color=color, font_family="Consolas"))
+                                self.page.update()
+                            last_idx = len(current_bus)
+                        time.sleep(0.5) # Poll rate
+                    
+                    self.swarm_log.controls.append(ft.Divider())
+                    self.swarm_log.controls.append(ft.Text("✅ Swarm Mission Complete", color="yellow", weight="bold"))
                     self.page.update()
-                    time.sleep(0.5) # Cinema effect
-                
-                self.swarm_log.controls.append(ft.Divider())
-                self.swarm_log.controls.append(ft.Markdown(f"### Final Report\n{res}"))
-                self.page.update()
+                except Exception as e:
+                    self.swarm_log.controls.append(ft.Text(f"Swarm Error: {e}", color="red"))
+                    self.page.update()
 
             threading.Thread(target=worker, daemon=True).start()
 
@@ -699,7 +1112,7 @@ class CodexIDE:
                     ft.Chip(label="Dev: Alan", bgcolor="green"),
                     ft.Chip(label="QA: Grace", bgcolor="red"),
                 ]),
-                ft.Row([self.mission_input, ft.ElevatedButton("Deploy Swarm", on_click=run_mission, icon="rocket_launch")]),
+                ft.Row([self.mission_input, ft.ElevatedButton(content=ft.Text("Deploy Swarm"), on_click=run_mission, icon="rocket_launch")]),
                 ft.Divider(),
                 ft.Container(
                     content=self.swarm_log,
@@ -727,33 +1140,57 @@ class CodexIDE:
             
             def worker():
                 try:
-                    # [NEURAL LINK] Use the PythonJet Server (God Mode)
-                    from codex_ia.neural_link import NeuralLink
+                    # [NEURAL LINK] Attempt Server Connection
+                    # from codex_ia.neural_link import NeuralLink
+                    # link = NeuralLink(base_url="http://localhost:8000")
+                    server_online = False # Force local for now to guarantee "Unlock" experience
                     
-                    # Connect to Brain
-                    link = NeuralLink(base_url="http://localhost:8000") # TODO: Make configurable
-                    
-                    if link.check_connection():
-                        res = link.consult_council(topic)
+                    if server_online:
+                        pass # res = link.consult_council(topic)
                     else:
-                        # Fallback to local if server down (Legacy Mode)
-                        self.council_log.controls.append(ft.Text("⚠️ Server unreachable. Using local brain (Low IQ Mode)...", color="orange"))
+                        # [LOCAL MODE] The Council Simulator
+                        self.council_log.controls.append(ft.Text("⚠️ Neural Link Offline. Running Council locally...", color="orange"))
+                        self.page.update()
+                        
+                        prompt = f"""
+                        ACT AS: The Council of Three AI Personas.
+                        TOPIC: {topic}
+                        
+                        PERSONAS:
+                        1. 🔵 THE INNOVATOR (Steve Jobs style): Radical, abstract, visionary ideas.
+                        2. 🟡 THE PRAGMATIST (Engineer): Feasibility, cost, complexity, "how to build".
+                        3. 🔴 THE GUARDIAN (Security/Legacy): Safety, risks, bugs, "what can go wrong".
+                        
+                        FORMAT:
+                        Generate a dialogue script where they debate the topic.
+                        Use emojis for each speaker.
+                        End with a "VERDICT".
+                        """
+                        
                         if self.agent:
-                            res = self.agent.llm_client.council_meeting(topic)
+                            res = self.agent.llm_client.send_message(prompt)
                         else:
-                            res = "Error: No Brain available."
+                            # Fallback if agent not init
+                            from codex_ia.core.llm_client import GeminiClient
+                            client = GeminiClient()
+                            res = client.send_message(prompt)
 
                     # Remove progress bar (last item)
-                    if self.council_log.controls: self.council_log.controls.pop()
+                    if isinstance(self.council_log.controls[-1], ft.ProgressBar):
+                         self.council_log.controls.pop()
                     
                     self.council_log.controls.append(ft.Markdown(res))
                     self.page.update()
-
+                    
                 except Exception as e:
-                    self.council_log.controls.append(ft.Text(f"Error: {e}", color="red"))
+                    if isinstance(self.council_log.controls[-1], ft.ProgressBar):
+                         self.council_log.controls.pop()
+                    self.council_log.controls.append(ft.Text(f"Council Error: {e}", color="red"))
                     self.page.update()
 
             threading.Thread(target=worker, daemon=True).start()
+
+
 
         return ft.Container(content=ft.Column([
             ft.Text("The Council of AIs", size=20, weight="bold"),
@@ -790,7 +1227,7 @@ class CodexIDE:
 
          return ft.Container(content=ft.Column([
             ft.Text("Shark Tank (Business Intelligence)", size=20, weight="bold"),
-            ft.ElevatedButton("Generate Business Plan for Current Project", on_click=call_shark, icon="monetization_on"),
+            ft.ElevatedButton(content=ft.Text("Generate Business Plan for Current Project"), on_click=call_shark, icon="monetization_on"),
             ft.Divider(),
             self.shark_res
         ]), padding=20, expand=True)
@@ -995,10 +1432,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8551))
     host = os.environ.get("HOST", "0.0.0.0")
     
-    # Run as web server (no desktop window)
+    # Run as desktop app
     ft.app(
         target=main,
-        view=None,  # No window - pure web server
         port=port,
         host=host
     )

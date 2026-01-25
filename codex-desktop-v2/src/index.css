@@ -96,3 +96,16 @@
 .animate-spin-slow {
     animation: spin-slow 12s linear infinite;
 }
+
+/* Electron Window Drag Controls */
+body {
+    -webkit-app-region: no-drag;
+}
+
+.titlebar {
+    -webkit-app-region: drag;
+}
+
+.no-drag {
+    -webkit-app-region: no-drag;
+}

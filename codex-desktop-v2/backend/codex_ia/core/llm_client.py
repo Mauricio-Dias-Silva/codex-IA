@@ -19,7 +19,7 @@ class GeminiClient:
              raise ValueError("API Key appears to be the default placeholder. Please update your .env file with a real key.")
         
         self.client = genai.Client(api_key=api_key)
-        self.model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+        self.model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         self.chat_session = None
 
     def start_chat(self, initial_history: list = None, web_search: bool = False):

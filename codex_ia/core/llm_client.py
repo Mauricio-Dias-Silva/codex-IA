@@ -21,8 +21,18 @@ class GeminiClient:
              api_key = "AIzaSyBREWGg-uOUss7bZIoK0xqBU5svqvyCX6Y"
         
         self.client = genai.Client(api_key=api_key)
-        self.model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+        self.model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         self.chat_session = None
+
+    def check_health(self):
+        """Quick check if Gemini API is reachable."""
+        try:
+            # Minimal call to check key/model validity
+            # and verify model list or similar
+            self.client.models.get(model=self.model)
+            return True
+        except:
+            return False
 
     def start_chat(self, initial_history: list = None, web_search: bool = False):
         """
@@ -158,16 +168,25 @@ class GeminiClient:
         )
     def embed_content(self, text: str) -> list:
         """
-        Generates embeddings for a given text using Gemini.
+        Generates embeddings. Tries local SentenceTransformers first to save costs.
         """
+        # Try local first 🧠
         try:
-            # Using the embedding model
-            result = self.client.models.embed_content(
-                model="text-embedding-004",
-                contents=text
-            )
-            return result.embeddings[0].values
-        except Exception as e:
-            # Fallback or error logging
-            print(f"Embedding Error: {e}")
-            return []
+            from sentence_transformers import SentenceTransformer
+            # Using a tiny model that is very fast on CPU
+            local_model = SentenceTransformer('all-MiniLM-L6-v2')
+            embedding = local_model.encode(text).tolist()
+            return embedding
+        except Exception as local_err:
+            # Fallback to Gemini if local fails
+            try:
+                # Using the embedding model
+                result = self.client.models.embed_content(
+                    model="text-embedding-004",
+                    contents=text
+                )
+                return result.embeddings[0].values
+            except Exception as e:
+                # Fallback or error logging
+                print(f"Embedding Error: {e}")
+                return []

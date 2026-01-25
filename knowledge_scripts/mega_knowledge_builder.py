@@ -10,44 +10,55 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from codex_ia.core.vector_store import CodexVectorStore
-from codex_ia.core.llm_client import GeminiClient
-from google.genai import types
+from codex_ia.core.brain_router import BrainRouter
 import time
 
 class MegaKnowledgeBuilder:
     """Massive multi-domain knowledge expansion."""
     
-    def __init__(self):
+    def __init__(self, provider="gemini"):
         self.store = CodexVectorStore()
-        self.llm = GeminiClient()
+        self.router = BrainRouter()
+        self.router.active_brain = provider
         self.indexed_count = 0
         self.total_words = 0
+        self.provider = provider
         
     def generate_and_index(self, domain: str, prompt: str, metadata: dict):
-        """Generate knowledge and index with quality check."""
+        """Generate knowledge and index with quality check and Smart Skip."""
         try:
-            response = self.llm.client.models.generate_content(
-                model=self.llm.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.2,
-                    max_output_tokens=4000
-                )
+            # [OPTIMIZATION] Smart Skip Check 🛡️
+            # Check if this domain is already present in the collection
+            existing = self.store.collection.get(
+                where={"domain": domain},
+                limit=1
             )
             
-            if response and response.text and len(response.text) > 500:
+            if existing and existing['ids']:
+                print(f"   ⏩ SKIPPING: domain '{domain}' already indexed.")
+                return True
+
+            print(f"   🤖 Generating knowledge for '{domain}' via {self.provider.upper()}...")
+            # Use router for generation to support both Gemini and Ollama
+            response_text = self.router.send_message(
+                message=prompt, 
+                use_fallback=False # Stick to user selection
+            )
+            
+            if response_text and len(response_text) > 500 and "❌" not in response_text and "⚠️" not in response_text:
                 doc_id = self.store.index_text(
-                    text=response.text,
+                    text=response_text,
                     metadata=metadata
                 )
                 self.indexed_count += 1
-                word_count = len(response.text.split())
+                word_count = len(response_text.split())
                 self.total_words += word_count
                 print(f"   ✅ {doc_id[:12]}... | ~{word_count} palavras")
                 return True
             else:
-                print(f"   ⚠️  Resposta muito curta, pulando")
+                print(f"   ⚠️  Falha na geração ou resposta muito curta.")
+                if "❌" in response_text or "⚠️" in response_text:
+                    print(f"      Erro detalhado: {response_text[:100]}...")
                 return False
                 
         except Exception as e:
@@ -367,16 +378,36 @@ CFA/MBA level. 3300 palavras."""
 def run_mega_builder():
     """Execute massive knowledge building."""
     
-    builder = MegaKnowledgeBuilder()
+    print("\n" + "=" * 80)
+    print("🧠 MEGA KNOWLEDGE BUILDER - COST OPTIMIZED V2")
+    print("=" * 80)
+    
+    print("\n📡 Escolha o provedor de cérebro:")
+    print("1. Gemini 1.5 Flash (Nuvem - Rápido, custo por token)")
+    print("2. Ollama (Local - Lento, 100% GRÁTIS)")
+    
+    choice = input("\nDigite a opção (1 ou 2) [Padrão 1]: ")
+    provider = "ollama" if choice == "2" else "gemini"
+    
+    builder = MegaKnowledgeBuilder(provider=provider)
     topics = create_mega_topics()
     
-    print("\n" + "=" * 80)
-    print("🧠 MEGA KNOWLEDGE BUILDER - TARGET 1M+ WORDS")
-    print("=" * 80)
+    # [OPTIMIZATION] Safety Brake 🛑
+    BATCH_SIZE = 20
+    total_batches = (len(topics) + BATCH_SIZE - 1) // BATCH_SIZE
+    
     print(f"\n📊 Total de tópicos: {len(topics)}")
-    print(f"📈 Palavras estimadas: ~{len(topics) * 3500:,}")
-    print(f"⏱️  Tempo estimado: {len(topics) * 10 // 60} minutos")
-    print(f"💰 Custo API: GRÁTIS (Gemini free tier)")
+    print(f"📦 Tamanho do Lote (Safety Brake): {BATCH_SIZE} tópicos por execução")
+    
+    # Cost Warning
+    if provider == "gemini":
+        est_input_tokens = len(topics) * 500  # Approx prompt size
+        est_output_tokens = len(topics) * 2000 # Reduced target
+        print(f"\n💰 ESTIMATIVA DE CUSTO (Gemini 1.5 Flash):")
+        print(f"   ~{est_output_tokens:,} tokens de saída totais")
+        print(f"   IMPORTANTE: O script pausa a cada {BATCH_SIZE} tópicos para sua confirmação.")
+
+    print(f"🤖 Provedor: {provider.upper()}")
     
     user_input = input("\n🚀 Pressione ENTER para iniciar...ou 'skip' para cancelar: ")
     
@@ -386,6 +417,18 @@ def run_mega_builder():
     start_time = time.time()
     
     for i, topic in enumerate(topics, 1):
+        # [OPTIMIZATION] Check Batch Limit
+        if i > 1 and (i - 1) % BATCH_SIZE == 0:
+            elapsed_batch = time.time() - start_time
+            print(f"\n🛑 PAUSA DE SEGURANÇA (Lote de {BATCH_SIZE} concluído)")
+            print(f"   Tempo decorrido: {int(elapsed_batch/60)}m {int(elapsed_batch%60)}s")
+            print(f"   Custos: Verifique seu painel do Google AI Studio se estiver usando Gemini.")
+            cont = input("\n   Continuar para o próximo lote? (s/n) [n]: ")
+            if cont.lower() != 's':
+                print("   🛑 Encerrando script por segurança.")
+                break
+            print("   🚀 Continuando...")
+
         print(f"\n[{i}/{len(topics)}] {topic['category']}: {topic['domain']}")
         
         metadata = {
@@ -396,9 +439,18 @@ def run_mega_builder():
             'type': 'COMPREHENSIVE_KNOWLEDGE'
         }
         
+        # Inject Optimization instruction into prompt if not present
+        prompt_text = topic['prompt']
+        if "3500 palavras" in prompt_text:
+             prompt_text = prompt_text.replace("3500 palavras", "2000 palavras (Alta Densidade, Sem Enrolação)")
+        if "3000 palavras" in prompt_text:
+             prompt_text = prompt_text.replace("3000 palavras", "2000 palavras (Alta Densidade)")
+        if "3200 palavras" in prompt_text:
+             prompt_text = prompt_text.replace("3200 palavras", "2000 palavras (Alta Densidade)")
+        
         builder.generate_and_index(
             domain=topic['domain'],
-            prompt=topic['prompt'],
+            prompt=prompt_text,
             metadata=metadata
         )
         
@@ -409,24 +461,21 @@ def run_mega_builder():
         else:
             time.sleep(1)
         
-        # Progress report every 20 items
-        if i % 20 == 0:
+        # Progress report every 5 items
+        if i % 5 == 0:
             elapsed = time.time() - start_time
-            avg_time = elapsed / i
-            remaining = (len(topics) - i) * avg_time
-            print(f"\n📊 Progresso: {builder.total_words:,} palavras | Tempo restante: ~{int(remaining/60)}min")
+            print(f"   📊 Progresso Total: {builder.total_words:,} palavras geradas")
     
     elapsed = time.time() - start_time
     minutes = int(elapsed // 60)
     seconds = int(elapsed % 60)
     
     print("\n" + "=" * 80)
-    print("🧠 MEGA KNOWLEDGE BUILDER COMPLETO!")
+    print("🧠 MEGA KNOWLEDGE BUILDER - SESSÃO FINALIZADA")
     print("=" * 80)
-    print(f"✅ Indexados: {builder.indexed_count}/{len(topics)} tópicos")
+    print(f"✅ Indexados nesta sessão: {builder.indexed_count}")
     print(f"📝 Total de palavras: ~{builder.total_words:,}")
     print(f"⏱️  Tempo total: {minutes}m {seconds}s")
-    print(f"\n💡 Execute novamente com diferentes domínios para expandir ainda mais!")
 
 if __name__ == "__main__":
     run_mega_builder()

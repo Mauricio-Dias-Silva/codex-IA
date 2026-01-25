@@ -17,18 +17,24 @@ function createWindow() {
         },
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false, // For easier prototyping, security warning though
-            preload: path.join(__dirname, 'preload.js')
+            contextIsolation: false, // For easier prototyping
+            preload: path.join(__dirname, 'preload.js'),
+            webSecurity: false // Allow loading resources from CDN/External sources without CORS issues
         },
         backgroundColor: '#1e293b',
         icon: path.join(__dirname, 'assets/icon.png')
     });
 
     // Load React App (Dev mode vs Prod)
-    if (app.isPackaged) {
-        mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
-    } else {
-        mainWindow.loadURL('http://localhost:5173');
+    // SIMPLIFIED PRODUCTION MODE
+    // Always load the static build to avoid port conflicts and network issues.
+    const distPath = path.join(__dirname, 'dist', 'index.html');
+    mainWindow.loadFile(distPath);
+    console.log(`Loaded static interface: ${distPath}`);
+
+    // If dist doesn't exist, warn in console (but build should have succeeded)
+    if (!fs.existsSync(distPath)) {
+        console.error("DIST FOLDER MISSING! Did you run 'npm run build'?");
     }
 
     // DEBUG: Force Open DevTools
@@ -62,16 +68,25 @@ function startPythonBackend() {
         stdio: ['pipe', 'pipe', 'pipe'], // Stdin, Stdout, Stderr
         env: {
             ...process.env,
-            GOOGLE_API_KEY: "AIzaSyC_j17fvwpFK8lkxhCeC_VUjDZpTbO-ix4", // Injected Key Phase 4 Fix
             PYTHONIOENCODING: 'utf-8'
         }
     });
 
+    let dataBuffer = '';
     pythonProcess.stdout.on('data', (data) => {
-        console.log(`[PYTHON]: ${data}`);
-        // Forward to frontend if needed
-        if (mainWindow) {
-            mainWindow.webContents.send('python-output', data.toString());
+        dataBuffer += data.toString();
+
+        let boundary = dataBuffer.indexOf('\n');
+        while (boundary !== -1) {
+            const message = dataBuffer.substring(0, boundary);
+            dataBuffer = dataBuffer.substring(boundary + 1);
+
+            console.log(`[PYTHON]: ${message}`);
+            if (mainWindow) {
+                mainWindow.webContents.send('python-output', message);
+            }
+
+            boundary = dataBuffer.indexOf('\n');
         }
     });
 

@@ -29,7 +29,7 @@ class QuantumLeapTrainer:
         self.store = CodexVectorStore()
         self.llm = GeminiClient()
         # Force Flash for speed/volume
-        self.llm.model = "gemini-2.0-flash-exp" 
+        self.llm.model = "gemini-2.0-flash" 
         self.indexed_count = 0
         
     def generate_and_index(self, domain: str, prompt: str, metadata: dict):

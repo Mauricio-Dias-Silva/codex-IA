@@ -1,4 +1,5 @@
 import logging
+import os
 from codex_ia.core.context import ContextManager
 from codex_ia.core.brain_router import BrainRouter
 from codex_ia.core.network_agent import NetworkAgent
@@ -12,6 +13,24 @@ class CodexAgent:
         self.context_manager = ContextManager(project_dir)
         self.llm_client = BrainRouter() # The Council
         self.network_agent = NetworkAgent()
+        
+        # [PHASE 6] Global Knowledge 🌍
+        try:
+            from codex_ia.core.global_store import GlobalVectorStore
+            self.global_store = GlobalVectorStore()
+        except Exception:
+            self.global_store = None
+
+    def share_knowledge_globally(self, topic, content, metadata=None):
+        """Shares knowledge from the current project to the universal store."""
+        if self.global_store:
+            return self.global_store.share_knowledge(
+                source_project=os.path.basename(self.project_dir),
+                topic=topic,
+                content=content,
+                metadata=metadata
+            )
+        return None
 
     def set_context(self, new_dir):
         """Atualiza o diretório de contexto do agente."""
@@ -19,23 +38,16 @@ class CodexAgent:
         self.context_manager = ContextManager(new_dir)
         logging.info(f"Contexto alterado para: {new_dir}")
 
-    def chat(self, message, web_search=False, image_path=None, use_fallback=True):
+    def chat(self, message, web_search=False, image_path=None, use_fallback=True, task_type='general'):
         """
         Interage com o agente Codex.
         use_fallback=False = Modo Único (apenas Gemini, sem fallback)
         use_fallback=True = Modo Consórcio (com fallback automático)
         """
         try:
-            # We don't always need to inject full context if it's a simple chat, 
-            # but let's keep it if implemented in LLM client (Wait, LLM Client signature is (message, web_search, image_path)).
-            # The previous code passed 'context' to send_message which was wrong based on llm_client definition.
-            # Let's fix this invocation.
-            
-            # Note: The ContextManager logic seems unused in the previous 'send_message' call 
-            # because send_message only took (message, web_search).
-            # We should probably prepend context to the message if needed.
-            
-            context = self.context_manager.get_context()
+            # [OPTIMIZATION] Semantic Context 🧠
+            # We only send what's relevant to the current user message
+            context = self.context_manager.get_semantic_context(message)
             
             # 🛡️ PROTEÇÃO ANTI-VAZAMENTO DE CÓDIGO
             system_instruction = (
@@ -71,7 +83,7 @@ class CodexAgent:
             
             full_message = f"{system_instruction}\n\nCONTEXT:\n{context}\n\nUSER MESSAGE:\n{message}"
             
-            response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path, use_fallback=use_fallback)
+            response = self.llm_client.send_message(full_message, web_search=web_search, image_path=image_path, use_fallback=use_fallback, task_type=task_type)
             
             # 🛡️ LEGAL SHIELD IMPLEMENTATION (ESCUDO JURÍDICO)
             keywords_sensitive = [
@@ -106,6 +118,42 @@ class CodexAgent:
         except Exception as e:
             logging.error(f"Erro ao gerar codebase: {e}")
             return f"Ocorreu um erro: {e}"
+
+    def analyze_file_change(self, file_path, content):
+        """
+        [PHASE 3] Pro-active Sentinel Analysis.
+        Detects bugs or improvements in a changed file using Local LLM.
+        """
+        filename = os.path.basename(file_path)
+        
+        analysis_prompt = f"""
+        TAREFA: Analise o código abaixo e identifique BUGS críticos ou MELHORIAS óbvias.
+        ARQUIVO: {filename}
+        
+        REGRAS:
+        1. Seja extremamente conciso.
+        2. Se não houver erros consideráveis, responda apenas: "CLEAN".
+        3. Se houver algo a relatar, use o formato: [TIPO] Descrição curta. Sugestão: o que mudar.
+        
+        CÓDIGO:
+        {content}
+        """
+        
+        try:
+            # We only use local LLMs for frequent background activities to avoid costs
+            if "ollama" in self.llm_client.neurons:
+                # Force local check to save $$$
+                response = self.llm_client.neurons["ollama"].send_message(analysis_prompt)
+                
+                # Check for "not detected" or "error" in local response
+                if "⚠️ Ollama não detectado" in response or "❌" in response:
+                    return None
+                    
+                return response if "CLEAN" not in response.upper() else None
+            return None
+        except Exception as e:
+            logging.error(f"Sentinel Analysis failed: {e}")
+            return None
 
     def add_file_to_context(self, file_path):
         """
