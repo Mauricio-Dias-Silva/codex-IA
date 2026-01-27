@@ -26,15 +26,20 @@ function createWindow() {
     });
 
     // Load React App (Dev mode vs Prod)
-    // SIMPLIFIED PRODUCTION MODE
-    // Always load the static build to avoid port conflicts and network issues.
-    const distPath = path.join(__dirname, 'dist', 'index.html');
-    mainWindow.loadFile(distPath);
-    console.log(`Loaded static interface: ${distPath}`);
+    // Load React App
+    if (app.isPackaged) {
+        // PROD: Load static files
+        const distPath = path.join(__dirname, 'dist', 'index.html');
+        mainWindow.loadFile(distPath);
+        console.log(`[PROD] Loaded static interface: ${distPath}`);
+    } else {
+        // DEV: Load Vite Server (Hot Reload)
+        // Ensure you run 'npm run dev' in a separate terminal!
+        mainWindow.loadURL('http://localhost:5174');
+        console.log('[DEV] Loaded Vite Server: http://localhost:5174');
 
-    // If dist doesn't exist, warn in console (but build should have succeeded)
-    if (!fs.existsSync(distPath)) {
-        console.error("DIST FOLDER MISSING! Did you run 'npm run build'?");
+        // Open DevTools automatically in Dev
+        mainWindow.webContents.openDevTools();
     }
 
     // DEBUG: Force Open DevTools
