@@ -137,9 +137,11 @@ ipcMain.on('to-python', (event, args) => {
 });
 
 ipcMain.handle('dialog:openDirectory', async () => {
+    console.log("[MAIN] Opening directory dialog...");
     const { canceled, filePaths } = await dialog.showOpenDialog({
         properties: ['openDirectory']
     });
+    console.log("[MAIN] Dialog result - Canceled:", canceled, "Paths:", filePaths);
     if (canceled) {
         return null;
     } else {

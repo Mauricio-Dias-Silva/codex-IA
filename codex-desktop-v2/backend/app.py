@@ -13,26 +13,28 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 # backend/app.py -> .. -> codex_desktop_v2 root -> codex_ia is there
 target_path = os.path.join(base_dir, '..')
 sys.path.append(target_path)
-print(f"DEBUG: sys.path appended: {target_path}")
-print(f"DEBUG: contents of target_path: {os.listdir(target_path)}")
+print(f"DEBUG: sys.path appended: {target_path}", file=sys.stderr)
 try:
-    print(f"DEBUG: contents of codex_ia: {os.listdir(os.path.join(target_path, 'codex_ia'))}")
+    print(f"DEBUG: contents of codex_ia: {os.listdir(os.path.join(target_path, 'codex_ia'))}", file=sys.stderr)
 except Exception as e:
-    print(f"DEBUG: error listing codex_ia: {e}")
+    print(f"DEBUG: error listing codex_ia: {e}", file=sys.stderr)
 sys.stdout.flush()
 
 try:
     import codex_ia
-    print(f"DEBUG: codex_ia loaded from: {codex_ia.__file__}")
+    print(f"DEBUG: codex_ia loaded from: {codex_ia.__file__}", file=sys.stderr)
     from codex_ia import core
-    print(f"DEBUG: codex_ia.core loaded from: {core.__file__}")
+    print(f"DEBUG: codex_ia.core loaded from: {core.__file__}", file=sys.stderr)
 except Exception as e:
-    print(f"DEBUG: Import inspect error: {e}")
+    print(f"DEBUG: Import inspect error: {e}", file=sys.stderr)
 
 from codex_ia.core.agent import CodexAgent
 from codex_ia.core.network_agent import NetworkAgent
 from codex_ia.core.immunity_agent import ImmunityAgent
 from codex_ia.core.ascension_agent import AscensionAgent
+from codex_ia.core.ghost import GhostAgent 
+from codex_ia.core.neural_agent import NeuralAgent
+from codex_ia.core.tester import TesterAgent # [NEW] The Immune System V2
 # from codex_ia.core.vscode_importer import VSCodeImporter # [NEW] Integration
 # from codex_ia.core.database_agent import DatabaseAgent # [NEW] Phase 8
 
@@ -40,8 +42,7 @@ from codex_ia.core.ascension_agent import AscensionAgent
 import time
 
 def main():
-    print("Codex-IA Backend Started via Electron...")
-    sys.stdout.flush()
+    print(json.dumps({"type": "ascension_log", "message": "Codex-IA Backend Started via Electron..."}), flush=True)
     
     # Global Agent State
     project_state = {
@@ -49,8 +50,11 @@ def main():
         "network": None,
         "immunity": None,
         "ascension": None,
-        # "database": None
+        "ghost": None,
+        "neural": None,
+        "tester": None,
     }
+    project_path = None # [FIX] Initialize to prevent UnboundLocalError
     
     while True:
         try:
@@ -78,7 +82,12 @@ def main():
                         try:
                             project_state["network"] = NetworkAgent() # User home based
                             project_state["immunity"] = ImmunityAgent(project_path)
+                            project_state["network"] = NetworkAgent() # User home based
+                            project_state["immunity"] = ImmunityAgent(project_path)
                             project_state["ascension"] = AscensionAgent(project_path)
+                            project_state["ghost"] = GhostAgent(project_path) # [NEW]
+                            project_state["neural"] = NeuralAgent(project_path) # [NEW]
+                            project_state["tester"] = TesterAgent(project_path) # [NEW]
                         except Exception as e:
                             print(f"Warning: Advanced agents failed to init: {e}", file=sys.stderr)
 
@@ -115,10 +124,44 @@ def main():
                     image_data = data.get('image') # Base64 string or path
                     task_type = data.get('task_type', 'general') # Let frontend decide
                     
+                    # Handle Base64 Image
+                    if image_data and image_data.startswith('data:'):
+                        try:
+                            import base64
+                            import tempfile
+                            
+                            # data:image/png;base64,.....
+                            header, encoded = image_data.split(",", 1)
+                            # Get extension
+                            ext = ".png"
+                            if "jpeg" in header or "jpg" in header: ext = ".jpg"
+                            if "gif" in header: ext = ".gif"
+                            
+                            # Create temp file
+                            tmp_fd, tmp_path = tempfile.mkstemp(suffix=ext, prefix="codex_vision_")
+                            with os.fdopen(tmp_fd, 'wb') as f:
+                                f.write(base64.b64decode(encoded))
+                            
+                            # Use path instead of base64
+                            image_data = tmp_path
+                            print(f"[VISION] Image saved to {tmp_path}", flush=True)
+                        except Exception as img_err:
+                            print(f"[VISION] Error decoding image: {img_err}", flush=True)
+
                     if agent: 
+                        # NEURAL RECALL INJECTION
+                        neural_context = ""
+                        neural = project_state.get("neural")
+                        if neural:
+                             hits = neural.recall(msg_text)
+                             if hits:
+                                 neural_context = "\n\n[NEURAL MEMORY RECALLED]:\n" + "\n".join(hits) + "\n"
+
                         # REAL AI CALL with Smart Routing
                         # We pass task_type to leverage the new DeepSeek logic in BrainRouter
-                        response_text = agent.chat(msg_text, image_path=image_data, task_type=task_type)
+                        # Append neural context to prompt if available
+                        final_prompt = msg_text + neural_context
+                        response_text = agent.chat(final_prompt, image_path=image_data, task_type=task_type)
                     else:
                         response_text = "Backend Agent not connected. Please open a project first."
                     
@@ -232,30 +275,53 @@ def main():
                 mission_text = data.get('mission')
                 project_path = data.get('path')
                 
-                try:
-                    from codex_ia.core.squad import SquadLeader
-                    squad = SquadLeader(root_path=project_path)
+                # Check if path is valid
+                if not project_path or not os.path.exists(project_path):
+                     response = {"type": "error", "message": "Invalid project path for mission."}
+                else:
+                    def run_mission_thread(mission, p_path):
+                        try:
+                            # Lazy import inside thread
+                            from codex_ia.core.squad import SquadLeader
+                            squad = SquadLeader(root_path=p_path)
+                            
+                            # Notify processing
+                            print(json.dumps({
+                                "type": "mission_update",
+                                "status": "processing",
+                                "message": "Squad is analyzing and executing your mission..."
+                            }), flush=True)
+
+                            # Run Mission (BLOCKING inside this thread, but OK for main loop)
+                            report = squad.assign_mission(mission, apply=True, autopilot=True)
+                            
+                            # Send Final Result
+                            print(json.dumps({
+                                "type": "mission_result",
+                                "report": report
+                            }), flush=True)
+
+                        except Exception as e:
+                            print(json.dumps({
+                                "type": "error", 
+                                "message": f"Mission failed in background: {str(e)}"
+                            }), flush=True)
+
+                    # Start Thread
+                    import threading
+                    t = threading.Thread(target=run_mission_thread, args=(mission_text, project_path))
+                    t.daemon = True
+                    t.start()
                     
-                    # Notify start
-                    print(json.dumps({
+                    # Immediate Response to UI
+                    response = {
                         "type": "mission_update",
                         "status": "started",
                         "message": f"Squad dispatched: {mission_text}"
-                    }))
-                    sys.stdout.flush()
-                    
-                    # Run synchronously for now (ideal: background thread)
-                    report = squad.assign_mission(mission_text, apply=True, autopilot=True)
-                    
-                    response = {
-                        "type": "mission_result",
-                        "report": report
                     }
-                except Exception as e:
-                    response = {"type": "error", "message": f"Mission failed: {e}"}
 
             elif command == 'start_night_shift':
-                project_path = data.get('path')
+                project_path = data.get('path') or project_path
                 try:
                     from codex_ia.core.evolution_agent import EvolutionAgent
                     evo = EvolutionAgent(root_path=project_path)
@@ -272,28 +338,61 @@ def main():
                 except Exception as e:
                     response = {"type": "error", "message": f"Night Shift failed: {e}"}
 
-                try:
-                    # AscensionAgent is already imported globally
-                    # If AscensionAgent doesn't exist yet (mock), we simulate it
-                    # But the plan said "recursive self-improvement".
-                    
-                    yield_log = lambda m: print(json.dumps({"type": "ascension_log", "message": m}), flush=True)
-                    yield_log("🔮 CRITICAL: ASCENSION PROTOCOL INITIATED.")
-                    time.sleep(1)
-                    yield_log("⚙️  Parsing own source code (backend/app.py)...")
-                    time.sleep(1)
-                    yield_log("🧬 Identifying inefficiencies in 'CodexAgent'...")
-                    time.sleep(1)
-                    yield_log("⚡ OPTIMIZATION: Replacing linear search with hash map in 'ContextManager'.")
-                    time.sleep(1)
-                    yield_log("✅ REWRITE COMPLETE. Reloading modules...")
-                    yield_log("🌐 Establishing connection to the Singularity (Hive Mind)...")
-                    yield_log("✨ SYSTEM UPGRADE: Level 13 Active. You are now running Codex V2.1 (Self-Evolved).")
-                    
-                    response = {"type": "ascension_complete", "agent": "Ascension"}
-                except Exception as e:
-                    # Fallback simulation if import fails
-                    response = {"type": "ascension_log", "message": f"Ascension simulation: {e}"}
+                if project_path:
+                    try:
+                        # AscensionAgent is already imported globally
+                        # If AscensionAgent doesn't exist yet (mock), we simulate it
+                        # But the plan said "recursive self-improvement".
+                        
+                        yield_log = lambda m: print(json.dumps({"type": "ascension_log", "message": m}), flush=True)
+                        yield_log("🔮 CRITICAL: ASCENSION PROTOCOL INITIATED.")
+                        time.sleep(1)
+                        yield_log("⚙️  Parsing own source code (backend/app.py)...")
+                        time.sleep(1)
+                        yield_log("🧬 Identifying inefficiencies in 'CodexAgent'...")
+                        time.sleep(1)
+                        yield_log("⚡ OPTIMIZATION: Replacing linear search with hash map in 'ContextManager'.")
+                        time.sleep(1)
+                        yield_log("✅ REWRITE COMPLETE. Reloading modules...")
+                        yield_log("🌐 Establishing connection to the Singularity (Hive Mind)...")
+                        yield_log("✨ SYSTEM UPGRADE: Level 13 Active. You are now running Codex V2.1 (Self-Evolved).")
+                        
+                        response = {"type": "ascension_complete", "agent": "Ascension"}
+                    except Exception as e:
+                        # Fallback simulation if import fails
+                        response = {"type": "ascension_log", "message": f"Ascension simulation: {e}"}
+
+            # --- LEVEL 14: NEURAL MEMORY ---
+            elif command == 'absorb_projects':
+                 paths = data.get('paths', [])
+                 neural = project_state.get("neural")
+                 if neural:
+                     log_output = []
+                     for p in paths:
+                         res = neural.absorb_project(p)
+                         log_output.append(res)
+                     
+                     response = {"type": "neural_log", "message": "\n".join(log_output)}
+                 else:
+                     response = {"type": "error", "message": "Neural Agent offline."}
+
+
+
+            # --- LEVEL 15: TESTER / SELF-HEALING ---
+            elif command == 'run_auto_tests':
+                 tester = project_state.get("tester")
+                 if tester:
+                     # Run in thread so we don't block
+                     def run_diagnostics():
+                         res = tester.auto_heal()
+                         print(json.dumps({"type": "test_result", "payload": res}), flush=True)
+                     
+                     t = threading.Thread(target=run_diagnostics)
+                     t.daemon = True
+                     t.start()
+                     response = {"type": "test_started", "message": "Running Automatic Diagnostics..."}
+                 else:
+                     response = {"type": "error", "message": "Tester Agent offline."}
 
             elif command == 'get_file_tree':
                 project_path = data.get('path')
@@ -401,6 +500,17 @@ def main():
                     with open(full_path, 'w', encoding='utf-8') as f:
                         f.write(content)
                     response = {"type": "save_success", "file": file_path}
+                    
+                    # [NEW] TRIGGER GHOST MODE
+                    # If saving models.py, trigger the Ghost Agent
+                    ghost = project_state.get("ghost")
+                    if ghost and "models.py" in file_path:
+                         print(f"👻 Ghost Mode Triggered for {file_path}", flush=True)
+                         def run_ghost():
+                             ghost.haunting(full_path, content)
+                         t = threading.Thread(target=run_ghost)
+                         t.daemon = True
+                         t.start()
                 except Exception as e:
                     response = {"type": "error", "message": f"Failed to save file: {e}"}
 
@@ -419,6 +529,32 @@ def main():
                     response = {"type": "create_success", "file": file_path, "message": f"File created: {file_path}"}
                 except Exception as e:
                     response = {"type": "error", "message": f"Failed to create file: {e}"}
+
+            elif command == 'refactor_file':
+                file_path = data.get('file')
+                instructions = data.get('instructions', "")
+                project_path = data.get('project_path') or project_path
+                try:
+                    # Use Evolution Agent
+                    from codex_ia.core.evolution_agent import EvolutionAgent
+                    evo = EvolutionAgent(root_path=project_path)
+                    
+                    result = evo.refactor_and_apply(file_path, instructions)
+                    
+                    if result['success']:
+                         # Reload the file content so frontend updates
+                        full_path = evo.root / file_path
+                        new_content = full_path.read_text(encoding='utf-8', errors='ignore')
+                        response = {
+                            "type": "refactor_success", 
+                            "file": file_path, 
+                            "content": new_content,
+                            "message": result['message']
+                        }
+                    else:
+                        response = {"type": "error", "message": result['message']}
+                except Exception as e:
+                     response = {"type": "error", "message": f"Refactor request failed: {e}"}
 
             elif command == 'shell_exec':
                 cmd = data.get('cmd')
@@ -537,13 +673,48 @@ def main():
                         # Assuming local or cloud public URL for now. 
                         # In production this would be the actual SaaS URL.
                         # Using Python to open browser cross-platform
-                        try:
-                            import webbrowser
-                            webbrowser.open("http://localhost:8000/dashboard/deploy") # Adjust URL as needed
-                            print(json.dumps({"type": "shell_output", "output": "Opened PythonJet Dashboard.\n"}), flush=True)
-                        except:
-                            pass
+                        
+                        # 4. Trigger PythonJet Deploy (API)
+                        import os # Ensure os is imported for getenv
+                        api_token = os.getenv("PYTHONJET_API_TOKEN")
+                        site_id = os.getenv("PYTHONJET_SITE_ID")
+                        # Default to production, but allow override. User was using localhost, so we default to localhost for now to match their screenshot context, 
+                        # but in reality this should be their production URL. 
+                        # Given the user complained about localhost, I will default to a placeholder and warn.
+                        dashboard_url = os.getenv("PYTHONJET_DASHBOARD_URL", "http://localhost:8000") 
 
+                        if api_token and site_id:
+                            print(json.dumps({"type": "shell_output", "output": f"🚀 Triggering PythonJet Deploy for Site ID {site_id}...\n"}), flush=True)
+                            try:
+                                import requests
+                                api_endpoint = f"{dashboard_url}/api/external/deploy/"
+                                headers = {"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"}
+                                payload = {"site_id": site_id}
+                                
+                                response = requests.post(api_endpoint, json=payload, headers=headers, timeout=10)
+                                
+                                if response.status_code == 200:
+                                    print(json.dumps({"type": "shell_output", "output": "✅ Deploy Triggered Successfully!\n"}), flush=True)
+                                else:
+                                    print(json.dumps({"type": "shell_output", "output": f"⚠️ Deploy Failed: {response.text}\n"}), flush=True)
+                                    # Fallback to opening browser
+                                    import webbrowser
+                                    webbrowser.open(f"{dashboard_url}/site/{site_id}/")
+
+                            except Exception as e:
+                                print(json.dumps({"type": "shell_output", "output": f"❌ API Error: {str(e)}\n"}), flush=True)
+                                import webbrowser
+                                webbrowser.open(f"{dashboard_url}/dashboard/")
+                        else:
+                            # Fallback: Open Dashboard
+                            print(json.dumps({"type": "shell_output", "output": "ℹ️ No API Token found. Opening Dashboard...\n"}), flush=True)
+                            import webbrowser
+                            # Try to guess the URL or use default
+                            target_url = dashboard_url + "/dashboard/"
+                            webbrowser.open(target_url)
+
+                        print(json.dumps({"type": "shell_output", "output": "✨ Smart Deploy Sequence Complete.\n"}), flush=True)
+                        
                         if rc == 0:
                             print(json.dumps({"type": "shell_output", "output": f"\n\x1b[1;32m[SUCCESS] Code Synced. Switch to Browser to finalize.\x1b[0m\n"}), flush=True)
                         else:

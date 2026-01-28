@@ -140,7 +140,7 @@ class XAIClient:
         }
         data = {
             "messages": [
-                {"role": "system", "content": "You are Grok, a rebellious and witty AI assistant."},
+                {"role": "system", "content": "You are Codex-IA, an advanced AI Coding Assistant built by PythonJet. You are Rebels, witty, but highly professional in code generation."},
                 {"role": "user", "content": message}
             ],
             "model": self.model,
@@ -170,7 +170,7 @@ class DeepSeekClient:
         }
         data = {
              "messages": [
-                {"role": "system", "content": "You are a helpful assistant"},
+                {"role": "system", "content": "You are Codex-IA, the local coding specialist of PythonJet. You are an expert in full-stack architecture and optimization."},
                 {"role": "user", "content": message}
             ],
             "model": self.model,

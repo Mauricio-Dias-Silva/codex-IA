@@ -1,0 +1,6 @@
+@echo off
+echo [CODEX-IA] Fixing Environment...
+set "ELECTRON_RUN_AS_NODE="
+echo [CODEX-IA] Starting Application...
+npm start
+pause

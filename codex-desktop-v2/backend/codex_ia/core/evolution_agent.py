@@ -103,3 +103,41 @@ class EvolutionAgent:
             missions_run += 1
             
         yield "☀️ Night Shift shift ended."
+
+    def refactor_and_apply(self, file_path: str, instructions: str = "") -> Dict[str, Any]:
+        """
+        [UNFILTERED EVOLUTION]
+        Reads a file, asks the LLM to refactor it, and OVERWRITES it.
+        """
+        full_path = self.root / file_path
+        
+        if not full_path.exists():
+            return {"success": False, "message": f"File not found: {file_path}"}
+            
+        try:
+            # 1. Read Content
+            content = full_path.read_text(encoding='utf-8', errors='ignore')
+            
+            # 2. Ask LLM to Refactor
+            # We trust the LLM to return valid code.
+            refactored_code = self.client.refactor_code(content, instructions)
+            
+            # 3. Sanity Check (Basic) - Ensure we didn't get an error message
+            if "Error" in refactored_code and len(refactored_code) < 200:
+                return {"success": False, "message": f"LLM Refusal/Error: {refactored_code}"}
+                
+            # Strip markdown code blocks if present (common LLM behavior)
+            clean_code = refactored_code.replace("```python", "").replace("```javascript", "").replace("```", "").strip()
+            
+            # 4. OVERWRITE (The "Unfiltered" part)
+            full_path.write_text(clean_code, encoding='utf-8')
+            
+            return {
+                "success": True, 
+                "message": f"Successfully refactored {file_path}",
+                "diff": "File overwritten with new version." 
+            }
+            
+        except Exception as e:
+            return {"success": False, "message": f"Refactor failed: {str(e)}"}
+

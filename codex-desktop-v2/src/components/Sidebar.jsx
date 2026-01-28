@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Folder, FileCode, ChevronRight, ChevronDown,
-    Code, Bot, Settings, Sparkles, Image, Send, Rocket, Database, Moon
+    Code, Bot, Settings, Sparkles, Image, Send, Rocket, Database, Moon, X
 } from 'lucide-react';
 
 const FileTreeNode = ({ node, onFileClick, depth = 0 }) => {
@@ -54,7 +54,10 @@ const FileTreeNode = ({ node, onFileClick, depth = 0 }) => {
 const Sidebar = ({
     activeView, setActiveView,
     isProjectLoaded, loadProject, fileTree, openFile,
-    chatHistory, chatInput, setChatInput, sendChat, selectImage, taskType, setTaskType
+    chatHistory, chatInput, setChatInput, sendChat, selectImage, taskType, setTaskType,
+    selectedImage, setSelectedImage,
+    onAbsorbProjects,
+    onRunTests
 }) => {
     const chatEndRef = useRef(null);
     useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory]);
@@ -110,13 +113,81 @@ const Sidebar = ({
                                 <div ref={chatEndRef} />
                             </div>
                             <div className="p-2 bg-[#252526] border-t border-[#1e1e1e]">
-                                <textarea className="w-full bg-[#1e1e1e] border border-[#3c3c3c] rounded p-2 text-xs text-[#ccc] h-16 resize-none outline-none focus:border-[#007acc]" placeholder="Fale com o Codex..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendChat())} />
-                                <div className="flex justify-between mt-1"><button onClick={selectImage} className="text-[#555] hover:text-[#007acc]"><Image size={14} /></button><button onClick={sendChat} className="text-[#007acc] hover:text-[#1177bb]"><Send size={14} /></button></div>
+                                {selectedImage && (
+                                    <div className="relative mb-2 inline-block group">
+                                        <img src={selectedImage} alt="Preview" className="h-16 w-16 object-cover rounded border border-[#007acc]" />
+                                        <button
+                                            onClick={() => setSelectedImage(null)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </div>
+                                )}
+                                <textarea className="w-full bg-[#1e1e1e] border border-[#3c3c3c] rounded p-2 text-xs text-[#ccc] h-16 resize-none outline-none focus:border-[#007acc]" placeholder={selectedImage ? "Ask Codex Vision about this image..." : "Fale com o Codex..."} value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendChat())} />
+                                <div className="flex justify-between mt-1">
+                                    <button onClick={selectImage} className={`hover:text-[#007acc] ${selectedImage ? 'text-[#007acc]' : 'text-[#555]'}`} title="Attach Image for Vision"><Image size={14} /></button>
+                                    <button onClick={sendChat} className="text-[#007acc] hover:text-[#1177bb]"><Send size={14} /></button>
+                                </div>
                             </div>
                         </div>
                     </>
                 )}
-                {/* Other views (Missions, Night Shift) would render their specific sidebars here if needed */}
+
+                {activeView === 'ascension' && (
+                    <div className="flex flex-col h-full bg-[#1e1e1e]">
+                        <div className="p-2 pl-4 text-[11px] font-bold text-[#bbbbbb] uppercase flex justify-between items-center bg-[#252526]">
+                            ASCENSION PROTOCOLS
+                            <Sparkles size={12} className="text-yellow-400" />
+                        </div>
+                        <div className="p-4 flex flex-col gap-4 overflow-y-auto">
+                            <div className="border border-[#7e57c2] bg-[#7e57c2]/10 rounded p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Sparkles className="text-[#7e57c2]" size={16} />
+                                    <span className="font-bold text-sm text-[#ddd]">Neural Context</span>
+                                </div>
+                                <p className="text-xs text-[#999] mb-3 leading-relaxed">
+                                    Index legacy projects (SysGov, EduFuturo, etc.) into the Vector Database.
+                                </p>
+                                <button
+                                    onClick={onAbsorbProjects}
+                                    className="w-full bg-[#7e57c2] hover:bg-[#9575cd] text-white py-1.5 px-3 rounded text-xs font-bold transition flex items-center justify-center gap-2"
+                                >
+                                    <Database size={12} /> Absorb All Projects
+                                </button>
+                            </div>
+
+                            <div className="border border-[#e2c08d] bg-[#e2c08d]/10 rounded p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Bot className="text-[#e2c08d]" size={16} />
+                                    <span className="font-bold text-sm text-[#ddd]">Immune System</span>
+                                </div>
+                                <p className="text-xs text-[#999] mb-3 leading-relaxed">
+                                    Run self-diagnostics and auto-patching for the current project.
+                                </p>
+                                <button
+                                    onClick={onRunTests}
+                                    className="w-full bg-[#e2c08d] hover:bg-[#efcf9f] text-[#1e1e1e] py-1.5 px-3 rounded text-xs font-bold transition flex items-center justify-center gap-2"
+                                >
+                                    <Sparkles size={12} /> Run Auto-Healing
+                                </button>
+                            </div>
+
+                            <div className="border border-[#333] bg-[#252526] rounded p-3 opacity-75">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Bot className="text-[#4ec9b0]" size={16} />
+                                    <span className="font-bold text-sm text-[#ddd]">Active Agents</span>
+                                </div>
+                                <div className="flex flex-col gap-2 text-xs text-[#aaa]">
+                                    <div className="flex justify-between"><span>👻 Ghost Writer</span><span className="text-[#4ec9b0]">Active</span></div>
+                                    <div className="flex justify-between"><span>🛡️ Immunity</span><span className="text-[#4ec9b0]">Active</span></div>
+                                    <div className="flex justify-between"><span>👁️ Vision</span><span className="text-[#4ec9b0]">Active</span></div>
+                                    <div className="flex justify-between"><span>🧠 Neural</span><span className="text-yellow-500">Standby</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

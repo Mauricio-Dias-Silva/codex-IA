@@ -43,9 +43,18 @@ const App = () => {
         if (window.ipcRenderer) {
             setIpcConnected(true);
             window.ipcRenderer.send('to-python', { command: 'get_vscode_settings' });
-            window.ipcRenderer.on('python-output', (event, data) => handleBackendResponse(JSON.parse(data)));
+            window.ipcRenderer.on('python-output', (event, data) => {
+                try {
+                    const parsed = JSON.parse(data);
+                    handleBackendResponse(parsed);
+                } catch (e) {
+                    console.warn("[IPC] Non-JSON output received from Python:", data);
+                    // Handle non-JSON as log/terminal output
+                    setTerminalOutput((prev) => prev + `\x1b[1;30m[PYTHON LOG] ${data}\x1b[0m\r\n`);
+                }
+            });
         }
-    }, []);
+    }, [projectPath]);
 
     const handleBackendResponse = (res) => {
         // ... (Keep existing handler logic) ...
@@ -97,11 +106,81 @@ const App = () => {
     const openFile = (fp) => { if (window.ipcRenderer) window.ipcRenderer.send('to-python', { command: 'read_file', file: fp, project_path: projectPath }); };
     const loadProject = () => { if (window.ipcRenderer) window.ipcRenderer.send('to-python', { command: 'set_project', path: projectPath }); else setIsProjectLoaded(true); };
     const saveFile = () => { if (window.ipcRenderer) window.ipcRenderer.send('to-python', { command: 'save_file', file: activeFile, content: code, project_path: projectPath }); };
-    const createNewFile = () => { const f = prompt("Nome do arquivo:"); if (f && window.ipcRenderer) window.ipcRenderer.send('to-python', { command: 'create_file', file: f, project_path: projectPath }); };
-    const openNativeFolder = async () => { if (window.ipcRenderer) { const p = await window.ipcRenderer.invoke('dialog:openDirectory'); if (p) { setProjectPath(p); window.ipcRenderer.send('to-python', { command: 'set_project', path: p }); } } };
+    const createNewFile = () => {
+        // prompt() is not supported in many Electron envs, using a default or we can add a proper modal later
+        const filename = "novo_arquivo.py";
+        if (window.ipcRenderer) window.ipcRenderer.send('to-python', { command: 'create_file', file: filename, project_path: projectPath });
+    };
+    const openNativeFolder = async () => {
+        console.log("[DEBUG] openNativeFolder clicked");
+        if (window.ipcRenderer) {
+            try {
+                const p = await window.ipcRenderer.invoke('dialog:openDirectory');
+                console.log("[DEBUG] Folder selected:", p);
+                if (p) {
+                    setProjectPath(p);
+                    window.ipcRenderer.send('to-python', { command: 'set_project', path: p });
+                }
+            } catch (err) {
+                console.error("[DEBUG] Error opening folder:", err);
+            }
+        } else {
+            console.error("[DEBUG] ipcRenderer not found");
+        }
+    };
     const deployProject = () => { if (window.ipcRenderer) { setTerminalOutput("\x1b[1;36m[CODEX AGENT] Requesting Deployment...\x1b[0m\r\n"); setShowTerminal(true); window.ipcRenderer.send('to-python', { command: 'deploy', path: projectPath }); } };
     const selectImage = () => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = (e) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = (ev) => setSelectedImage(ev.target.result); r.readAsDataURL(f); } }; i.click(); };
 
+    const handleRefactor = (instructions) => {
+        if (window.ipcRenderer) {
+            setTerminalOutput(`\x1b[1;36m[CODEX AGENT] Refactoring ${activeFile}...\x1b[0m\r\n`);
+            window.ipcRenderer.send('to-python', {
+                command: 'refactor_file',
+                file: activeFile,
+                instructions: instructions,
+                project_path: projectPath
+            });
+        }
+    };
+
+    // Neural Context
+    const absorbProjects = () => {
+        if (window.ipcRenderer) {
+            setTerminalOutput("\x1b[1;35m[NEURAL AGENT] Absorbing Legacy Projects into Vector Memory...\x1b[0m\r\n");
+            setShowTerminal(true);
+            const legacyPaths = [
+                "c:\\Users\\Mauricio\\Desktop\\sysgov-project",
+                "c:\\Users\\Mauricio\\Desktop\\edufuturo",
+                "c:\\Users\\Mauricio\\Desktop\\scalabis",
+                "c:\\Users\\Mauricio\\Desktop\\painel-pythonjet",
+                "c:\\Users\\Mauricio\\Desktop\\baassimulator"
+            ];
+            window.ipcRenderer.send('to-python', { command: 'absorb_projects', paths: legacyPaths });
+        }
+    };
+
+    // Self-Healing
+    const runAutoTests = () => {
+        if (window.ipcRenderer) {
+            setTerminalOutput("\x1b[1;33m[TESTER AGENT] Running Diagnostics & Auto-Healing...\x1b[0m\r\n");
+            setShowTerminal(true);
+            window.ipcRenderer.send('to-python', { command: 'run_auto_tests' });
+        }
+    };
+
+    // === EDITOR API ===
+    const editorRef = useRef(null);
+    const onEditorMount = (editor) => { editorRef.current = editor; };
+
+    const handleUndo = () => editorRef.current?.trigger('api', 'undo');
+    const handleRedo = () => editorRef.current?.trigger('api', 'redo');
+    const handleCut = () => { editorRef.current?.focus(); document.execCommand('cut'); };
+    const handleCopy = () => { editorRef.current?.focus(); document.execCommand('copy'); };
+    const handlePaste = () => { editorRef.current?.focus(); navigator.clipboard.readText().then(t => editorRef.current.trigger('keyboard', 'type', { text: t })); };
+
+    // Zoom Logic
+    const handleZoomIn = () => setEditorSettings(prev => ({ ...prev, fontSize: Math.min(prev.fontSize + 2, 32) }));
+    const handleZoomOut = () => setEditorSettings(prev => ({ ...prev, fontSize: Math.max(prev.fontSize - 2, 8) }));
 
     // === RENDER ===
     return (
@@ -113,15 +192,15 @@ const App = () => {
                 onOpenFile={openNativeFolder}
                 onSave={saveFile}
                 onExit={() => window.close()}
-                onUndo={() => { }} // Placeholder: Need editor reference for real undo
-                onRedo={() => { }}
-                onCut={() => { }}
-                onCopy={() => { }}
-                onPaste={() => { }}
+                onUndo={handleUndo}
+                onRedo={handleRedo}
+                onCut={handleCut}
+                onCopy={handleCopy}
+                onPaste={handlePaste}
                 onToggleSidebar={() => setShowSidebar(!showSidebar)}
                 onToggleTerminal={() => setShowTerminal(!showTerminal)}
-                onZoomIn={() => { }} // Could control font size state
-                onZoomOut={() => { }}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
                 onRun={deployProject}
                 onDebug={deployProject}
                 onNewTerminal={() => runTerminalCommand('powershell')}
@@ -139,6 +218,9 @@ const App = () => {
                             fileTree={fileTree} openFile={openFile}
                             chatHistory={chatHistory} chatInput={chatInput} setChatInput={setChatInput}
                             sendChat={sendChat} selectImage={selectImage} taskType={taskType} setTaskType={setTaskType}
+                            selectedImage={selectedImage} setSelectedImage={setSelectedImage}
+                            onAbsorbProjects={absorbProjects}
+                            onRunTests={runAutoTests}
                         />
                     </div>
                 )}
@@ -157,7 +239,9 @@ const App = () => {
                                 onLoadProject={loadProject}
                                 onNewFile={createNewFile}
                                 onOpenNativeFolder={openNativeFolder}
+                                onRefactor={handleRefactor}
                                 settings={editorSettings}
+                                onEditorMount={onEditorMount}
                             />
                         )}
                         {activeView === 'missions' && (

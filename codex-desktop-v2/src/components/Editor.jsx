@@ -11,7 +11,9 @@ const CodexEditor = ({
     onNewFile,
     onOpenManual,
     onOpenNativeFolder,
-    settings
+    onRefactor,
+    settings,
+    onEditorMount // [NEW] Expose editor instance
 }) => {
 
     // Sub-component for Empty State
@@ -55,6 +57,25 @@ const CodexEditor = ({
                     theme={settings?.theme || "vs-dark"}
                     value={code}
                     onChange={setCode}
+                    onMount={(editor, monaco) => {
+                        // Add "Refactor with Codex" Context Menu Action
+                        editor.addAction({
+                            id: 'refactor-with-codex',
+                            label: '✨ Refactor with Codex Agent',
+                            contextMenuGroupId: 'navigation',
+                            contextMenuOrder: 1,
+                            run: (ed) => {
+                                const instructions = "Optimize and clean up this code.";
+                                if (onRefactor) {
+                                    onRefactor(instructions);
+                                }
+                                alert("Refatoração iniciada com instruções padrão. Use o chat para comandos específicos!");
+                            }
+                        });
+
+                        // Call parent onMount if exists
+                        if (onEditorMount) onEditorMount(editor, monaco);
+                    }}
                     loading={<div className="text-[#666] flex items-center justify-center h-full">Inicializando Monaco Editor...</div>}
                     options={{
                         fontSize: settings?.fontSize || 14,
@@ -67,7 +88,8 @@ const CodexEditor = ({
                         automaticLayout: true,
                         fontLigatures: settings?.isLigatures || true,
                         renderLineHighlight: "all",
-                        bracketPairColorization: { enabled: true }
+                        bracketPairColorization: { enabled: true },
+                        contextmenu: true // Ensure context menu is enabled
                     }}
                 />
             </div>
