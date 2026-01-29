@@ -47,7 +47,12 @@ class TrendHunterAgent:
                 pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
                 description = item.find("description").text if item.find("description") is not None else ""
                 news = item.find(".//ht:news_item_url", namespaces={'ht': 'https://trends.google.com/trends/trendingsearches/daily'})
-                news_url = news.text if news is not None else "#"
+                if news is not None and news.text:
+                    news_url = news.text
+                else:
+                    # Fallback: Create a Google Search URL so Firecrawl can read the search results
+                    from urllib.parse import quote
+                    news_url = f"https://www.google.com/search?q={quote(title)}"
 
                 score = 50
                 if "M+" in traffic_text: score = 95
