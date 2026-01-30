@@ -7,9 +7,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Setup logging
+# Setup logging
+log_file = "omni_brain.log"
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(log_file, mode='a', encoding='utf-8')
+    ]
 )
 logger = logging.getLogger("OmniLearner-Codex")
 
