@@ -40,7 +40,10 @@ class OllamaClient:
         self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.model_code = os.getenv("OLLAMA_MODEL_CODE", "deepseek-coder-v2")
         self.model_reasoning = os.getenv("OLLAMA_MODEL_REASONING", "deepseek-r1")
+        self.model_code = os.getenv("OLLAMA_MODEL_CODE", "deepseek-coder-v2")
+        self.model_reasoning = os.getenv("OLLAMA_MODEL_REASONING", "deepseek-r1")
         self._available_models = []
+        self.active_model_name = "unknown" # New property to track what we are actually using
         
     def _refresh_models(self):
         try:
@@ -68,16 +71,25 @@ class OllamaClient:
             # Fallback logic if target model is not installed
             # Check for 'deepseek-v3.1:671b-cloud' or similar
             cloud_fallback = [m for m in self._available_models if 'cloud' in m or 'v3' in m]
+            
+            # [NEW] Prioritize Llama 3.2 or Mistral if Deepseek is missing
+            llama_fallback = [m for m in self._available_models if 'llama' in m or 'mistral' in m]
+
             if cloud_fallback:
                 target = cloud_fallback[0]
             elif reasoning:
                 substitutes = [m for m in self._available_models if 'r1' in m]
                 target = substitutes[0] if substitutes else self._available_models[0]
+            elif llama_fallback:
+                # If we want detailed coding but deepseek isn't there, Llama is best bet
+                target = llama_fallback[0]
             else:
                 substitutes = [m for m in self._available_models if 'coder' in m]
                 target = substitutes[0] if substitutes else self._available_models[0]
             
             logging.warning(f"Ollama: Using detected model: {target}")
+        
+        self.active_model_name = target # Persist for introspection
 
         data = {
             "model": target,
@@ -223,10 +235,35 @@ class BrainRouter:
             return True
         return False
         
-    def get_active_brain(self):
+    def get_connected_model(self):
          return self.neurons.get(self.active_brain)
 
+    def get_brain_status(self):
+        """
+        Returns a dict with the status of the active brain.
+        Example: {"provider": "ollama", "model": "llama3.2:3b", "online": True}
+        """
+        active = self.get_active_brain()
+        if not active:
+             return {"provider": "none", "model": "none", "online": False}
+        
+        provider_name = self.active_brain
+        model_name = "unknown"
+        
+        if hasattr(active, "model"):
+             model_name = active.model
+             # If Ollama, try to be more specific if we negotiated a model
+             if provider_name == "ollama" and hasattr(active, "active_model_name"):
+                  model_name = active.active_model_name
+        
+        return {
+            "provider": provider_name,
+            "model": model_name,
+            "online": True # We assume true if initialized, or can add a ping check
+        }
+
     def send_message(self, message, web_search=False, image_path=None, task_type="general"):
+        # [Introspection Update]: Track which model is actually used
         if task_type == "coding" and "ollama" in self.neurons:
              try:
                  requests.get(os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"), timeout=1)

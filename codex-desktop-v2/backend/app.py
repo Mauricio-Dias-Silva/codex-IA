@@ -116,6 +116,24 @@ def main():
                     "security_score": 85
                 }
                 
+                }
+
+            elif command == 'get_ai_status':
+                agent = project_state.get("agent")
+                if agent and agent.llm_client:
+                     # Access the BrainRouter inside the Agent
+                     try:
+                        status = agent.llm_client.get_brain_status()
+                        response = {"type": "ai_status_result", "status": status}
+                     except Exception as ex:
+                        response = {"type": "ai_status_result", "status": {"provider": "error", "model": str(ex), "online": False}}
+                else:
+                     # Fallback if agent not initialized yet
+                     response = {
+                         "type": "ai_status_result", 
+                         "status": {"provider": "offline", "model": "Open Project First", "online": False}
+                     }
+
             elif command == 'agent_message':
                 prompt = data.get('message')
                 agent = project_state["agent"]

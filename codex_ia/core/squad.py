@@ -5,9 +5,9 @@ from codex_ia.core.llm_client import GeminiClient
 from codex_ia.core.network_agent import NetworkAgent
 
 class BaseAgent:
-    def __init__(self, role: str, system_prompt: str):
+    def __init__(self, role: str, system_prompt: str, client: Any = None):
         self.role = role
-        self.client = GeminiClient()
+        self.client = client if client else GeminiClient()
         self.system_prompt = system_prompt
     
     def chat(self, user_msg: str) -> str:
@@ -15,24 +15,27 @@ class BaseAgent:
         return self.client.send_message(full_prompt)
 
 class CoderAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, client: Any = None):
         super().__init__(
             role="Senior Python Developer",
-            system_prompt="You write clean, efficient, and typed Python code. Return ONLY the code block."
+            system_prompt="You write clean, efficient, and typed Python code. Return ONLY the code block.",
+            client=client
         )
 
 class TesterAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, client: Any = None):
         super().__init__(
             role="QA Engineer",
-            system_prompt="You write pytest test cases for the provided code. Cover edge cases."
+            system_prompt="You write pytest test cases for the provided code. Cover edge cases.",
+            client=client
         )
 
 class EngineerAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, client: Any = None):
         super().__init__(
             role="DevOps Engineer",
-            system_prompt="You are responsible for applying code changes to the file system. You receive code and file paths, and your job is to write them. You must confirm the file path is correct."
+            system_prompt="You are responsible for applying code changes to the file system. You receive code and file paths, and your job is to write them. You must confirm the file path is correct.",
+            client=client
         )
 
     def apply_changes(self, root_path: str, file_path: str, code: str) -> str:
@@ -51,10 +54,11 @@ class EngineerAgent(BaseAgent):
             return f"❌ Failed to write to {full_path}: {e}"
 
 class ExecutorAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, client: Any = None):
         super().__init__(
             role="System Administrator",
-            system_prompt="You execute system commands to verify code. You return the output."
+            system_prompt="You execute system commands to verify code. You return the output.",
+            client=client
         )
 
     def run_command(self, command: str, work_dir: str) -> Dict[str, Any]:
@@ -77,10 +81,11 @@ class ExecutorAgent(BaseAgent):
             return {"success": False, "stderr": str(e), "stdout": ""}
 
 class ResearcherAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, client: Any = None):
         super().__init__(
             role="Technical Researcher",
-            system_prompt="You look up documentation and solutions online. You provide summaries and code snippets found on the web."
+            system_prompt="You look up documentation and solutions online. You provide summaries and code snippets found on the web.",
+            client=client
         )
     
     def research(self, query: str) -> str:
@@ -96,15 +101,16 @@ class SquadLeader:
     Orchestrates specialized agents to complete a feature request.
     [LEVEL 13 UPGRADE] Integrated with NetworkAgent for Feedback Loops.
     """
-    def __init__(self, root_path: str = "."):
+    def __init__(self, root_path: str = ".", llm_client: Any = None):
         self.root_path = root_path
         self.context_mgr = ContextManager(root_path)
-        self.coder = CoderAgent()
-        self.tester = TesterAgent()
-        self.engineer = EngineerAgent()
-        self.executor = ExecutorAgent()
-        self.researcher = ResearcherAgent()
-        self.client = GeminiClient()
+        self.client = llm_client if llm_client else GeminiClient()
+        
+        self.coder = CoderAgent(client=self.client)
+        self.tester = TesterAgent(client=self.client)
+        self.engineer = EngineerAgent(client=self.client)
+        self.executor = ExecutorAgent(client=self.client)
+        self.researcher = ResearcherAgent(client=self.client)
         
         # Connect to Exocortex
         self.network = NetworkAgent()

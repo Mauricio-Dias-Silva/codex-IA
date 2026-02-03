@@ -161,7 +161,7 @@ def main():
                 console.print(f"[bold yellow]🚀 Dispatching Squad for mission:[/bold yellow] {mission}")
                 
                 from codex_ia.core.squad import SquadLeader
-                squad = SquadLeader(agent.project_dir)
+                squad = SquadLeader(agent.project_dir, llm_client=agent.llm_client)
                 
                 with console.status("[bold cyan]Squad is planning & coding...[/bold cyan]", spinner="bouncingBar"):
                     # For CLI, apply=True by default for power users
